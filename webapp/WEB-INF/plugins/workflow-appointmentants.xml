@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?><plug-in>
+    <name>workflow-appointmentants</name>
+    <class>fr.paris.lutece.portal.service.plugin.PluginDefaultImplementation</class>
+    <version>1.0.0-SNAPSHOT</version>
+    <documentation/>
+    <installation/>
+    <changes/>
+    <user-guide/>
+    <description>module.workflow.appointmentants.module.description</description>
+    <provider>module.workflow.appointmentants.module.provider</provider>
+    <provider-url>http://dev.lutece.paris.fr</provider-url>
+    <icon-url>images/admin/skin/plugins/appointmentants/appointmentants_icon.png</icon-url>
+    <copyright>Copyright (c) 2023 Mairie de Paris</copyright>
+    <db-pool-required>1</db-pool-required>
+</plug-in>

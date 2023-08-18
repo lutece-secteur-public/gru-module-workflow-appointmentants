@@ -1,69 +1,74 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-    <parent>
-        <artifactId>lutece-global-pom</artifactId>
-        <groupId>fr.paris.lutece.tools</groupId>
-        <version>5.2.1</version>
-    </parent>
+	<parent>
+		<artifactId>lutece-global-pom</artifactId>
+		<groupId>fr.paris.lutece.tools</groupId>
+		<version>6.0.0</version>
+	</parent>
 
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>fr.paris.lutece.plugins</groupId>
-    <artifactId>module-workflow-appointment-ants</artifactId>
-    <packaging>lutece-plugin</packaging>
-    <version>0.0.1</version>
-    <name>Lutece Workflow Appointment ANTS module</name>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>fr.paris.lutece.plugins</groupId>
+	<artifactId>module-workflow-appointmentants</artifactId>
+	<packaging>lutece-plugin</packaging>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>Lutece Workflow Appointment ANTS module</name>
 
-    <repositories>
-        <repository>
-            <id>lutece</id>
-            <name>luteceRepository</name>
-            <url>http://dev.lutece.paris.fr/maven_repository</url>
-            <layout>default</layout>
-        </repository>
-    </repositories>
-
-    <dependencies>
-        <dependency>
+	<repositories>
+		<repository>
+			<id>lutece</id>
+			<name>luteceRepository</name>
+			<url>http://dev.lutece.paris.fr/maven_repository</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
+	
+	<dependencies>
+		<dependency>
+			<groupId>fr.paris.lutece</groupId>
+			<artifactId>lutece-core</artifactId>
+			<version>[7.0.8,)</version>
+			<type>lutece-core</type>
+		</dependency>
+		<dependency>
+			<groupId>fr.paris.lutece.plugins</groupId>
+			<artifactId>plugin-appointment</artifactId>
+			<version>[3.0.0,)</version>
+			<type>lutece-plugin</type>
+		</dependency>
+		<dependency>
+			<groupId>fr.paris.lutece.plugins</groupId>
+			<artifactId>library-workflow-core</artifactId>
+			<version>[1.2.1,)</version>
+		</dependency>
+		<dependency>
+			<groupId>fr.paris.lutece.plugins</groupId>
+			<artifactId>plugin-workflow</artifactId>
+			<version>[6.0.0,)</version>
+			<type>lutece-plugin</type>
+		</dependency>
+		<dependency>
             <groupId>fr.paris.lutece.plugins</groupId>
-            <artifactId>plugin-appointment</artifactId>
-            <version>[3.0.0,)</version>
-            <type>lutece-plugin</type>
+            <artifactId>library-httpaccess</artifactId>
+            <version>[3.0.1-SNAPSHOT,)</version>
         </dependency>
-        <dependency>
-            <groupId>fr.paris.lutece.plugins</groupId>
-            <artifactId>plugin-crmclient</artifactId>
-            <version>[2.0.2,)</version>
-            <type>lutece-plugin</type>
-        </dependency>
-        <dependency>
-            <groupId>fr.paris.lutece.plugins</groupId>
-            <artifactId>plugin-workflow</artifactId>
-            <version>[6.0.0,)</version>
-            <type>lutece-plugin</type>
-        </dependency>
-        <dependency>
-            <groupId>org.mnode.ical4j</groupId>
-            <artifactId>ical4j</artifactId>
-            <version>1.0.5</version>
-        </dependency>
-        <dependency>
-            <groupId>backport-util-concurrent</groupId>
-            <artifactId>backport-util-concurrent</artifactId>
-            <version>3.1</version>
-        </dependency>
-    </dependencies>
+		<dependency>
+			<groupId>fr.paris.lutece.plugins</groupId>
+			<artifactId>plugin-rest</artifactId>
+			<version>3.3.0</version>
+			<type>lutece-plugin</type>
+		</dependency>
+	</dependencies>
 
-    <properties>
-        <componentName>appointment</componentName>
-        <jiraProjectName>WFAPPOINTANTS</jiraProjectName>
-        <!--<jiraComponentId>12294</jiraComponentId>-->
-    </properties>
-    
-    <scm>
-        <connection>scm:git:https://github.com/lutece-secteur-public/gru-module-workflow-appointemntants.git</connection>
-        <developerConnection>scm:git:https://github.com/lutece-secteur-public/gru-module-workflow-appointemntants.git</developerConnection>
-        <url>https://github.com/lutece-secteur-public/gru-module-workflow-appointemntants.git</url>
-      <tag>HEAD</tag>
-  </scm>
-    
+	<properties>
+		<componentName>workflow-appointmentants</componentName>
+		<jiraProjectName>WFAPPOINTANTS</jiraProjectName>
+	</properties>
+
+	<scm>
+		<connection>scm:git:https://github.com/lutece-secteur-public/gru-module-workflow-appointemntants.git</connection>
+		<developerConnection>scm:git:https://github.com/lutece-secteur-public/gru-module-workflow-appointemntants.git</developerConnection>
+		<url>https://github.com/lutece-secteur-public/gru-module-workflow-appointemntants.git</url>
+		<tag>HEAD</tag>
+	</scm>
+
 </project>

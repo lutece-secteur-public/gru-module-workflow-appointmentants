@@ -36,6 +36,7 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -45,25 +46,29 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
-import org.springframework.transaction.annotation.Transactional;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import fr.paris.lutece.plugins.appointment.business.appointment.Appointment;
 import fr.paris.lutece.plugins.appointment.business.localization.Localization;
+import fr.paris.lutece.plugins.appointment.service.AppointmentResponseService;
 import fr.paris.lutece.plugins.appointment.service.AppointmentService;
 import fr.paris.lutece.plugins.appointment.service.LocalizationService;
 import fr.paris.lutece.plugins.appointment.web.AppointmentApp;
 import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
+import fr.paris.lutece.plugins.genericattributes.business.Response;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAddAntsAppointmentConfigDAO;
-import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsApplicationNumberDAO;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsAddAppointmentResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRest;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRestConstants;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.util.httpaccess.HttpAccessException;
+import fr.paris.lutece.util.url.UrlItem;
 
 /**
  * 
@@ -75,12 +80,42 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	public static final String BEAN_SERVICE = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + ".taskAntsAppointmentService";
 
 	@Inject
-	@Named( TaskAntsApplicationNumberDAO.BEAN_NAME )
-	private TaskAntsApplicationNumberDAO _application_number_dao;
-
-	@Inject
 	@Named( TaskAddAntsAppointmentConfigDAO.BEAN_NAME )
 	private TaskAddAntsAppointmentConfigDAO _task_add_appointment_dao;	
+
+	/**
+	 * ANTS' API URLs
+	 */
+	private static final String ANTS_BASE_URL =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL );
+	private static final String ANTS_STATUS_URL =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_STATUS_APPOINTMENT );
+
+	/**
+	 * ANTS' API URL Parameters
+	 */
+	private static final String URL_PARAMETER_APPLICATION_ID =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPLICATION_ID );
+	private static final String URL_PARAMETER_APPLICATION_IDS =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPLICATION_IDS );
+	private static final String URL_PARAMETER_MANAGEMENT_URL =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_MANAGEMENT_URL );
+	private static final String URL_PARAMETER_MEETING_POINT =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_MEETING_POINT );
+	private static final String URL_PARAMETER_APPOINTMENT_DATE =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPOINTMENT_DATE );
+
+	/**
+	 * Value of the ANTS API Token
+	 */
+	private static final String PROPERTY_API_OPT_AUTH_TOKEN_VALUE =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_VALUE );
+
+	/**
+	 * Status value of an ANTS appointment ("validated", "consumed", etc.)
+	 */
+	private static final String STATUS_VALIDATED =
+			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPOINTMENT_VALIDATED );
 
 	/**
 	 * Variables for general use
@@ -100,31 +135,33 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	public static boolean isAppointmentCreatedInFrontOffice( Appointment appointment )
 	{
-		/* If the appointment's "AdminUserCreate" field has no value OR has a value different from
-		 * the Admin code value ('admin' by default), then it was created by a user in the front office 
+		/* If the appointment's "AdminUserCreate" field has no value, then it is considered
+		 * that it was created by a user in the front office 
 		 * */
-		String adminCode = AppPropertiesService.getProperty( "appointment.ants.admin.code.value" );
 		return appointment.getAdminUserCreate( ) == null ||
-				appointment.getAdminUserCreate( ).isEmpty( ) ||
-				!appointment.getAdminUserCreate( ).equalsIgnoreCase( adminCode );
+				appointment.getAdminUserCreate( ).isEmpty( );
 	}
 
-	public static String createAntsAddAppointmentUrl( String baseUrl, String addAppointmentUrl, String applicationId,
+	public static String buildAntsAddAppointmentUrl( String baseUrl, String addAppointmentUrl, String applicationId,
 			String managementUrl, String meetingPoint, String dateTime )
 	{
-		return buildAntsAddAppointmentUrl( baseUrl, addAppointmentUrl,
-				AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPLICATION_ID ) + '=' + applicationId,
-				AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_MANAGEMENT_URL ) + '=' + managementUrl,
-				AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_MEETING_POINT ) + '=' + meetingPoint,
-				AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPOINTMENT_DATE ) + '=' + dateTime
-				);
+		StringBuilder antsApiUrl =  new StringBuilder( baseUrl ).
+				append( addAppointmentUrl );
+
+		UrlItem urlItem = new UrlItem( antsApiUrl.toString( ) );
+		urlItem.addParameter(URL_PARAMETER_APPLICATION_ID, applicationId );
+		urlItem.addParameter(URL_PARAMETER_MANAGEMENT_URL, managementUrl );
+		urlItem.addParameter(URL_PARAMETER_MEETING_POINT, meetingPoint );
+		urlItem.addParameter(URL_PARAMETER_APPOINTMENT_DATE, dateTime );
+
+		return urlItem.getUrl( );
 	}
 
 	/**
 	 * Build the URL used to add an appointment in the ANTS DB
 	 * 
 	 */
-	public static String buildAntsAddAppointmentUrl( String antsBaseUrl, String antsAddUrl,
+	public static String oldBuildAntsAddAppointmentUrl( String antsBaseUrl, String antsAddUrl,
 			String antsApplicationIdParam, String antsManagementUrlParam,
 			String antsMeetingPointParam, String antsAppointmentDateParam)
 	{
@@ -136,6 +173,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				append( antsAppointmentDateParam );
 
 		return antsApiUrl.toString( );
+	}
+
+	public static boolean createAntsAppointment( String antsUrl ) throws HttpAccessException, IOException
+	{
+		String response = TaskAntsAppointmentRest.addAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
+
+		return isAppointmentCreationSuccessful( response );
 	}
 
 	/**
@@ -184,16 +228,16 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return appointmentDataMap;
 	}
 
-	public static boolean isApplicationNumberStatusValid( List<String> applicationNumberList, String token ) 
+	public static boolean isApplicationNumberStatusValid( List<String> applicationNumberList ) 
 	{
 		String getStatusUrl = buildAntsGetStatusAppointmentUrl( applicationNumberList );
 
-		String validated = AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPOINTMENT_VALIDATED );
+		String validated = STATUS_VALIDATED;
 
 		String response = "";
 
 		try {
-			response = TaskAntsAppointmentRest.getAntsAppointmentStatus( getStatusUrl, token );
+			response = TaskAntsAppointmentRest.getAntsAppointmentStatus( getStatusUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
 		}
 		catch ( HttpAccessException h )
 		{
@@ -204,19 +248,23 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			AppLogService.error( BEAN_SERVICE, e );
 		}
 
-		if( response != null && !response.isEmpty( ) )
+		if( StringUtils.isNotBlank( response ) )
 		{
 			try
 			{
-				AntsStatusResponsePOJO responseObject = getStatusResponseAsObject( response );
+				List<AntsStatusResponsePOJO> responseObjectList = getStatusResponseAsObject( response );
 
-				/* If the application number hasn't been validated, or if it already has
-				 * appointments tied to it, then we shouldn't create any appointment
-				 * */
-				if ( !responseObject.getStatus().equals( validated ) ||
-						responseObject.getAppointments().length > 0)
+				// Check the validity of each application number's status and appointments
+				for( AntsStatusResponsePOJO application : responseObjectList)
 				{
-					return false;
+					/* If the application number hasn't been validated, or if it already has
+					 * appointments tied to it, then we shouldn't create any appointment
+					 * */
+					if( !StringUtils.equals( application.getStatus( ), validated ) ||
+							ArrayUtils.isNotEmpty( application.getAppointments( ) ) )
+					{
+						return false;
+					}
 				}
 			}
 			catch( IOException e)
@@ -224,6 +272,10 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				AppLogService.error( BEAN_SERVICE, e );
 				return false;
 			}
+		}
+		else
+		{
+			return false;
 		}
 		return true;
 	}
@@ -235,38 +287,42 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	public static String buildAntsGetStatusAppointmentUrl( List<String> applicationIdsList )
 	{
 		StringBuilder antsApisUrl = new StringBuilder(
-				AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL ) ).
-				append( AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_STATUS_APPOINTMENT ) ).
-				append( "?" );
+				ANTS_BASE_URL ).append( ANTS_STATUS_URL );
+
+		UrlItem urlItem = new UrlItem( antsApisUrl.toString( ) );
 
 		for( String applicationId : applicationIdsList )
 		{
-			antsApisUrl.append( AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPLICATION_IDS ) ).
-			append( "=" ).append( applicationId ).
-			append( "&" );
+			urlItem.addParameter( URL_PARAMETER_APPLICATION_IDS, applicationId );
 		}
-		// Remove the trailing character: '&'
-		return antsApisUrl.toString( ).substring( 0, antsApisUrl.length( ) - 1 );
+		return urlItem.getUrl();
 	}
 
 	/**
-	 * Creates an {@link AntsStatusResponsePOJO} Object from a json String containing the status
+	 * Creates a List of {@link AntsStatusResponsePOJO} Objects from a json String containing the status
 	 * and appointments list that were returned by the ANTS API
 	 * 
 	 */
-	public static AntsStatusResponsePOJO getStatusResponseAsObject( String response ) throws IOException
+	public static List<AntsStatusResponsePOJO> getStatusResponseAsObject( String response ) throws IOException
 	{
-		ObjectMapper mapper = new ObjectMapper();
+		ObjectMapper mapper = new ObjectMapper( );
 		JsonNode jsonNode = mapper.readTree( response );
+
+		List<AntsStatusResponsePOJO> statusList = new ArrayList<>( );
 
 		Iterator<String> fieldNames = jsonNode.fieldNames();
 
-		String fieldName = fieldNames.next( );
-
-		JsonNode field = jsonNode.get( fieldName );
-
-		return mapper.readerFor( AntsStatusResponsePOJO.class )
-				.readValue(field.toString());
+		// Build Objects from all the application numbers available
+		while( fieldNames.hasNext( ) )
+		{
+			String fieldName = fieldNames.next( );
+			JsonNode field = jsonNode.get( fieldName );
+			statusList.add(
+					mapper.readerFor( AntsStatusResponsePOJO.class )
+					.readValue( field.toString() )
+					);
+		}
+		return statusList;
 	}
 
 	/**
@@ -282,20 +338,43 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		{
 			AppLogService.error( BEAN_SERVICE, e );
 			return urlToClean;
-		}		
+		}
 	}
 
-	@Transactional( WorkflowAppointmentAntsPlugin.BEAN_TRANSACTION_MANAGER )
+	/**
+	 * When creating an appointment with the ANTS API, check whether the http response
+	 * returned a successful result or not
+	 *
+	 */
+	public static boolean isAppointmentCreationSuccessful( String response ) throws IOException
+	{
+		ObjectMapper mapper = new ObjectMapper( );
+
+		AntsAddAppointmentResponsePOJO responseObject =
+				mapper.readValue( response, AntsAddAppointmentResponsePOJO.class );
+
+		return responseObject.isSuccess( );
+	}
+	
+	public static List<String> getAntsApplicationValues( int idAppointment, String title )
+	{
+		List<Response> responseList = AppointmentResponseService.findListResponse( idAppointment );
+
+		List<String> applicationValuesList = new ArrayList<>( );
+
+		for( Response response : responseList )
+		{
+			if( StringUtils.contains( response.getEntry( ).getTitle( ), title) )
+			{
+				applicationValuesList.add( response.getResponseValue( ) );
+			}
+		}
+		return applicationValuesList;
+	}
+
 	@Override
 	public String getAntsApplicationFieldName( int idTask )
 	{
 		return _task_add_appointment_dao.load( idTask ).getAntsApplicationNumberFieldName( );
-	}
-
-	@Transactional( WorkflowAppointmentAntsPlugin.BEAN_TRANSACTION_MANAGER )
-	@Override
-	public List<String> getAntsApplicationValues( int idAppointment, String fieldName )
-	{		
-		return _application_number_dao.findByAppointmentIdAndFieldName( idAppointment, fieldName );
 	}
 }

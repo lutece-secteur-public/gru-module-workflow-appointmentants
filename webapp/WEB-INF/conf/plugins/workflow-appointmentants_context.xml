@@ -31,18 +31,10 @@
 	<bean id="workflow-appointmentants.taskAddAntsAppointmentConfig"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAddAntsAppointmentConfig"
 		scope="prototype" />
-
- 	<!-- Transaction Manager -->
-    <bean id="workflow-appointmentants.transactionManager"
-        class="fr.paris.lutece.portal.service.database.DAOUtilTransactionManager"
-        p:pluginName="workflow-appointmentants" />
-
+        
 	<!-- DAO -->
 	<bean id="workflow-appointmentants.taskAddAntsAppointmentConfigDAO"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAddAntsAppointmentConfigDAO" />
-
-	<bean id="workflow-appointmentants.taskAntsApplicationNumberDAO"
-		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsApplicationNumberDAO" />
 
 	<!-- Services -->
 	<bean id="workflow-appointmentants.taskAddAntsAppointmentConfigService"

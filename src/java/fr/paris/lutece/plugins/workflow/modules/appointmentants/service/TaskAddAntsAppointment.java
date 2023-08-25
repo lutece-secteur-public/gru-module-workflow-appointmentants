@@ -33,6 +33,7 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -41,10 +42,11 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.collections.CollectionUtils;
+
 import fr.paris.lutece.api.user.User;
 import fr.paris.lutece.plugins.appointment.business.appointment.Appointment;
 import fr.paris.lutece.plugins.appointment.service.AppointmentService;
-import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRest;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRestConstants;
 import fr.paris.lutece.plugins.workflowcore.business.resource.ResourceHistory;
 import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
@@ -86,25 +88,26 @@ public class TaskAddAntsAppointment extends SimpleTask
 	private static final String PROPERTY_LABEL_TITLE = "module.workflow.appointmentants.add_appointment.task_title";
 
 	@Override
-	public void processTask( int nIdResourceHistory, HttpServletRequest request, Locale locale, User user )
+	public boolean processTaskWithResult( int nIdResourceHistory, HttpServletRequest request, Locale locale, User user )
 	{
 		// Get the resourceHistory to find the resource to work with
 		ResourceHistory resourceHistory = _resourceHistoryService.findByPrimaryKey( nIdResourceHistory );
 
 		try
 		{
-			createAntsAppointment( request, resourceHistory.getIdResource( ), this.getId( ) );
+			return createAntsAppointment( request, resourceHistory.getIdResource( ), this.getId( ) );
 		}
 		catch ( Exception e )
 		{
 			AppLogService.error( CLASS_NAME, e );
+			return false;
 		}
 	}
 
 	/**
 	 * Use the ANTS API to create a new appointment in their database
 	 */
-	public void createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
+	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
 	{
 		Appointment appointment = AppointmentService.findAppointmentById( idAppointment );
 
@@ -112,23 +115,26 @@ public class TaskAddAntsAppointment extends SimpleTask
 
 		// Only create the appointment in the ANTS DB if it was created by a user
 		if( TaskAntsAppointmentService.isAppointmentCreatedInFrontOffice( appointment ) )
-		{
-			String antsToken = AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_VALUE );
-
-			// Retrieve all the ANTS Application values related to the current appointment
-			List<String> applicationNumberList = _antsAppointmentService.getAntsApplicationValues(
-					appointment.getIdAppointment( ),
+		{			
+			List<String> applicationNumberList = TaskAntsAppointmentService.getAntsApplicationValues(
+					idAppointment,
 					_antsAppointmentService.getAntsApplicationFieldName( idTask )
 					);
-
+			
+			// If the appointment has no application number(s), then stop the task
+			if( CollectionUtils.isEmpty( applicationNumberList ) )
+			{
+				return false;
+			}
+			
 			// Check if the application number used are valid and allow appointments creation
-			if( TaskAntsAppointmentService.isApplicationNumberStatusValid( applicationNumberList, antsToken ) ) {
+			if( TaskAntsAppointmentService.isApplicationNumberStatusValid( applicationNumberList ) ) {
 
 				// For each application number available, create a new ANTS appointment
 				for( String appplicationNumber : applicationNumberList ) {
 
 					// Build the ANTS URL used to create a new appointment
-					String antsURL = TaskAntsAppointmentService.createAntsAddAppointmentUrl(
+					String antsURL = TaskAntsAppointmentService.buildAntsAddAppointmentUrl(
 							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
 							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_ADD_APPOINTMENT),
 							appplicationNumber,
@@ -138,11 +144,15 @@ public class TaskAddAntsAppointment extends SimpleTask
 							);
 					try {
 						// Create the appointment on the ANTS database
-						TaskAntsAppointmentRest.addAntsAppointment( antsURL, antsToken );
+						return TaskAntsAppointmentService.createAntsAppointment( antsURL );
 					}
 					catch ( HttpAccessException h )
 					{
 						AppLogService.error( CLASS_NAME, h );
+					}
+					catch ( IOException i )
+					{
+						AppLogService.error( CLASS_NAME, i );
 					}
 					catch( Exception e )
 					{
@@ -151,6 +161,7 @@ public class TaskAddAntsAppointment extends SimpleTask
 				}
 			}
 		}
+		return false;
 	}
 
 	@Override

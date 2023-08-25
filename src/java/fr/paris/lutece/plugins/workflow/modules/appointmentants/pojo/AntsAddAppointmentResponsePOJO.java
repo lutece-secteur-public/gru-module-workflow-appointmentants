@@ -37,31 +37,24 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class AntsStatusResponsePOJO {
+public class AntsAddAppointmentResponsePOJO {
 
-	@JsonProperty( "status" )
-	private String status;
+	@JsonProperty( "success" )
+	private boolean success;
 
-	@JsonProperty( "appointments" )
-	private Object[] appointments;
-
-	public String getStatus( )
+	/**
+	 * @return the success
+	 */
+	public boolean isSuccess( )
 	{
-		return status;
+		return success;
 	}
 
-	public Object[] getAppointments( )
+	/**
+	 * @param success the success to set
+	 */
+	public void setSuccess( boolean success )
 	{
-		return appointments;
-	}
-
-	public void setStatus( String status )
-	{
-		this.status = status;
-	}
-
-	public void setAppointments( Object[] appointments )
-	{
-		this.appointments = appointments;
+		this.success = success;
 	}
 }

@@ -46,17 +46,17 @@ import fr.paris.lutece.portal.service.i18n.I18nService;
 
 /**
  * 
- * Component used to handle the interface / visual aspect of the "Add ANTS appointment" task
+ * Component used to handle the interface / visual aspect of the "Delete ANTS appointment" task
  *
  */
-public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointmentComponent
+public class TaskDeleteAntsAppointmentComponent extends AbstractTaskAntsAppointmentComponent
 {
 	@Inject
 	@Named( WorkflowAppointmentAntsPlugin.BEAN_CONFIG )
 	private ITaskConfigService _config;
 
-	private static final String PROPERTY_TASK_TITLE = "module.workflow.appointmentants.add_appointment.task_title";
-	
+	private static final String PROPERTY_TASK_TITLE = "module.workflow.appointmentants.delete_appointment.task_title";
+
 	/**
      * {@inheritDoc}
      */
@@ -64,7 +64,7 @@ public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointment
 	public String getDisplayConfigForm( HttpServletRequest request, Locale locale, ITask task )
 	{
 		String taskTitle = I18nService.getLocalizedString( PROPERTY_TASK_TITLE, locale );
-		
+
 		return getDisplayConfigForm( taskTitle, locale, task, _config );
 	}
 

@@ -62,6 +62,17 @@ public class TaskAntsAppointmentRest {
         return httpAccess.doPost( addAppointmentUrl, null, null, null, headersRequest );
 	}
 	
+	public static String deleteAntsAppointment( String deleteAppointmentUrl, String token )
+			throws HttpAccessException
+	{		
+		HttpAccess httpAccess = new HttpAccess(  );
+		
+		Map<String, String> headersRequest = new HashMap<>( );
+        headersRequest.put( AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_HEADER ), token );
+
+        return httpAccess.doDelete( deleteAppointmentUrl, null, null, headersRequest, null );
+	}
+	
 	public static String getAntsAppointmentStatus( String getStatusUrl, String token ) 
 			throws HttpAccessException
 	{

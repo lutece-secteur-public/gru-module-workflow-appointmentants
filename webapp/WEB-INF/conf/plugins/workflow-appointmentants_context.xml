@@ -14,6 +14,7 @@
        http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
 
 	<!-- Tasks -->
+	<!-- Task ADD an appointment -->
 	<bean id="workflow-appointmentants.taskTaskAddAntsAppointment"
 		class="fr.paris.lutece.plugins.workflowcore.business.task.TaskType"
 		p:key="taskTaskAddAntsAppointment"
@@ -25,6 +26,20 @@
 
 	<bean id="workflow-appointmentants.taskAddAntsAppointment"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.service.TaskAddAntsAppointment"
+		scope="prototype" />
+
+	<!-- Task DELETE an appointment -->
+	<bean id="workflow-appointmentants.taskTaskDeleteAntsAppointment"
+		class="fr.paris.lutece.plugins.workflowcore.business.task.TaskType"
+		p:key="taskTaskDeleteAntsAppointment"
+		p:titleI18nKey="module.workflow.appointmentants.delete_appointment.task_title"
+		p:beanName="workflow-appointmentants.taskDeleteAntsAppointment"
+		p:configBeanName="workflow-appointmentants.taskAntsAppointmentConfig"
+		p:configRequired="true" p:formTaskRequired="false"
+		p:taskForAutomaticAction="true" />
+
+	<bean id="workflow-appointmentants.taskDeleteAntsAppointment"
+		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.service.TaskDeleteAntsAppointment"
 		scope="prototype" />
 
 	<!-- Tasks Config -->
@@ -45,8 +60,15 @@
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.service.TaskAntsAppointmentService" />
 
 	<!-- Web Components -->
+	<!-- Web component ADD an appointment -->
 	<bean id="workflow-appointmentants.taskAddAntsAppointmentComponent"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.web.TaskAddAntsAppointmentComponent"
 		p:taskType-ref="workflow-appointmentants.taskTaskAddAntsAppointment"
+		p:taskConfigService-ref="workflow-appointmentants.taskAntsAppointmentConfigService" />
+		
+	<!-- Web component DELETE an appointment -->
+	<bean id="workflow-appointmentants.taskDeleteAntsAppointmentComponent"
+		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.web.TaskDeleteAntsAppointmentComponent"
+		p:taskType-ref="workflow-appointmentants.taskTaskDeleteAntsAppointment"
 		p:taskConfigService-ref="workflow-appointmentants.taskAntsAppointmentConfigService" />
 </beans>

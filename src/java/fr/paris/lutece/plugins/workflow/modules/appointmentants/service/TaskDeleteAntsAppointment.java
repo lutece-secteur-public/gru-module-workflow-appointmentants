@@ -60,12 +60,12 @@ import fr.paris.lutece.util.httpaccess.HttpAccessException;
 
 /**
  * 
- * Workflow task used to add an appointment in the ANTS' database, through their exposed API
+ * Workflow task used to delete an appointment from the ANTS' database, through their exposed API
  * 
  */
-public class TaskAddAntsAppointment extends SimpleTask
+public class TaskDeleteAntsAppointment extends SimpleTask
 {
-	public static final String CLASS_NAME = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + "TaskAddAntsAppointment";
+	public static final String CLASS_NAME = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + "TaskDeleteAntsAppointment";
 
 	@Inject
 	@Named( ResourceHistoryService.BEAN_SERVICE )
@@ -85,7 +85,7 @@ public class TaskAddAntsAppointment extends SimpleTask
 	/**
 	 * Title of the task
 	 */
-	private static final String PROPERTY_LABEL_TITLE = "module.workflow.appointmentants.add_appointment.task_title";
+	private static final String PROPERTY_LABEL_TITLE = "module.workflow.appointmentants.delete_appointment.task_title";
 
 	@Override
 	public boolean processTaskWithResult( int nIdResourceHistory, HttpServletRequest request, Locale locale, User user )
@@ -95,7 +95,7 @@ public class TaskAddAntsAppointment extends SimpleTask
 
 		try
 		{
-			return createAntsAppointment( request, resourceHistory.getIdResource( ), this.getId( ) );
+			return deleteAntsAppointment( request, resourceHistory.getIdResource( ), this.getId( ) );
 		}
 		catch ( Exception e )
 		{
@@ -105,17 +105,18 @@ public class TaskAddAntsAppointment extends SimpleTask
 	}
 
 	/**
-	 * Use the ANTS API to create a new appointment in their database
+	 * Use the ANTS API to delete an existing appointment from their database
 	 */
-	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
+	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
 	{
 		Appointment appointment = AppointmentService.findAppointmentById( idAppointment );
 
 		Map<String, String> applicationContent = TaskAntsAppointmentService.getAppointmentData( request, idAppointment );
 
-		// Only create the appointment in the ANTS DB if it was created by a user
+		// Only execute the task if the appointment was created by a user
 		if( TaskAntsAppointmentService.isAppointmentCreatedInFrontOffice( appointment ) )
-		{			
+		{
+			// Retrieve the application number(s) from the current appointment
 			List<String> applicationNumberList = TaskAntsAppointmentService.getAntsApplicationValues(
 					idAppointment,
 					_antsAppointmentService.getAntsApplicationFieldName( idTask )
@@ -127,24 +128,23 @@ public class TaskAddAntsAppointment extends SimpleTask
 				return false;
 			}
 			
-			// Check if the application number used are valid and allow appointments creation
-			if( TaskAntsAppointmentService.isApplicationNumberListValidForCreation( applicationNumberList ) ) {
+			// Check if the application numbers used are valid and still allow the appointments to be deleted
+			if( TaskAntsAppointmentService.isApplicationNumberListValidForDeletion( applicationNumberList ) ) {
 
-				// For each application number available, create a new ANTS appointment
+				// For each application number available, delete any existing ANTS appointment
 				for( String appplicationNumber : applicationNumberList ) {
 
-					// Build the ANTS URL used to create a new appointment
-					String antsURL = TaskAntsAppointmentService.buildAntsAddAppointmentUrl(
+					// Build the ANTS URL used to delete an appointment
+					String antsURL = TaskAntsAppointmentService.buildAntsDeleteAppointmentUrl(
 							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
-							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_ADD_APPOINTMENT),
+							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT),
 							appplicationNumber,
-							applicationContent.get( TaskAntsAppointmentService.KEY_URL ),
 							applicationContent.get( TaskAntsAppointmentService.KEY_LOCATION ),
 							applicationContent.get( TaskAntsAppointmentService.KEY_DATE )
 							);
 					try {
-						// Create the appointment on the ANTS database
-						return TaskAntsAppointmentService.createAntsAppointment( antsURL );
+						// Delete the appointment from the ANTS database
+						return TaskAntsAppointmentService.deleteAntsAppointment( antsURL );
 					}
 					catch ( HttpAccessException h )
 					{

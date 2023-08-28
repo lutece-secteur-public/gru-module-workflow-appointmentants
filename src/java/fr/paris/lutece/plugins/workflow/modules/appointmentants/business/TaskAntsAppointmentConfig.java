@@ -35,25 +35,29 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
 
 import fr.paris.lutece.plugins.workflowcore.business.config.TaskConfig;
 
-/**
- * 
- * Configuration for the ANTS Appointment Workflow Module
- *
- */
-public class TaskAddAntsAppointmentConfig extends TaskConfig {
+public class TaskAntsAppointmentConfig extends TaskConfig {
+	
+	private int _nIdForm;
 
-	/**
-	 * Name of the filed where users will input their ANTS number(s)
-	 */
-	private String _strAntsApplicationNumberFieldName;
+	private int _nIdFieldEntry;
 
-	public String getAntsApplicationNumberFieldName( )
+	public int getIdForm( )
 	{
-		return _strAntsApplicationNumberFieldName;
+		return _nIdForm;
 	}
 
-	public void setAntsApplicationNumberFieldName( String antsApplicationNumberFieldName )
+	public void setIdForm( int formId )
 	{
-		this._strAntsApplicationNumberFieldName = antsApplicationNumberFieldName;
-	}	
+		this._nIdForm = formId;
+	}
+
+	public int getIdFieldEntry( )
+	{
+		return _nIdFieldEntry;
+	}
+
+	public void setIdFieldEntry( int fieldEntryId )
+	{
+		this._nIdFieldEntry = fieldEntryId;
+	}
 }

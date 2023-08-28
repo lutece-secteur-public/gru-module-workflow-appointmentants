@@ -45,8 +45,8 @@ public class WorkflowAppointmentAntsPlugin extends PluginDefaultImplementation
      */
     public static final String PLUGIN_NAME = "workflow-appointmentants";
     
-    public static final String BEAN_CONFIG = PLUGIN_NAME + ".taskAddAntsAppointmentConfigService";
-        
+    public static final String BEAN_CONFIG = PLUGIN_NAME + ".taskAntsAppointmentConfigService";
+
     /**
      * Get this Plugin
      *

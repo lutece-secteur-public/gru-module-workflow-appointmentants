@@ -34,6 +34,6 @@
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 
 public interface ITaskAntsAppointmentService {
-
-	public String getAntsApplicationFieldName( int idTask );
+	
+	public int getAntsApplicationFieldName( int idTask );
 }

@@ -42,31 +42,32 @@ import fr.paris.lutece.util.sql.DAOUtil;
  * Provide Data Access methods for this Workflow
  *
  */
-public class TaskAddAntsAppointmentConfigDAO implements ITaskConfigDAO<TaskAddAntsAppointmentConfig>
+public class TaskAntsAppointmentConfigDAO implements ITaskConfigDAO<TaskAntsAppointmentConfig>
 {
 
-	public static final String BEAN_NAME = "workflow-appointmentants.taskAddAntsAppointmentConfigDAO";
+	public static final String BEAN_NAME = "workflow-appointmentants.taskAntsAppointmentConfigDAO";
 	
 	/**
 	 * SQL Queries
 	 */
-	private static final String SQL_QUERY_SELECT = "SELECT id_task, field_ants_number_title FROM workflow_task_ants_appointment WHERE id_task = ?";
-    private static final String SQL_QUERY_INSERT = "INSERT INTO workflow_task_ants_appointment ( id_task, field_ants_number_title ) VALUES ( ?, ? ) ";
+	private static final String SQL_QUERY_SELECT = "SELECT id_task, id_form, id_field_entry FROM workflow_task_ants_appointment WHERE id_task = ?";
+    private static final String SQL_QUERY_INSERT = "INSERT INTO workflow_task_ants_appointment ( id_task, id_form, id_field_entry ) VALUES ( ?, ?, ? ) ";
     private static final String SQL_QUERY_DELETE = "DELETE FROM workflow_task_ants_appointment WHERE id_task = ? ";
-    private static final String SQL_QUERY_UPDATE = "UPDATE workflow_task_ants_appointment SET field_ants_number_title = ? WHERE id_task = ?";
+    private static final String SQL_QUERY_UPDATE = "UPDATE workflow_task_ants_appointment SET id_form = ?, id_field_entry = ? WHERE id_task = ?";
 
     /**
      * {@inheritDoc}
      */
 	@Override
-	public void insert( TaskAddAntsAppointmentConfig config )
+	public void insert( TaskAntsAppointmentConfig config )
 	{
 		try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_INSERT, WorkflowAppointmentAntsPlugin.getPlugin( ) ) )
         {
             int nIndex = 0;
             daoUtil.setInt( ++nIndex, config.getIdTask( ) );
-            daoUtil.setString( ++nIndex, config.getAntsApplicationNumberFieldName( ) );
-            
+            daoUtil.setInt( ++nIndex, config.getIdForm() );
+            daoUtil.setInt( ++nIndex, config.getIdFieldEntry( ) );
+
             daoUtil.executeUpdate( );
         }
 	}
@@ -75,25 +76,26 @@ public class TaskAddAntsAppointmentConfigDAO implements ITaskConfigDAO<TaskAddAn
      * {@inheritDoc}
      */
 	@Override
-	public TaskAddAntsAppointmentConfig load( int nIdTask )
+	public TaskAntsAppointmentConfig load( int nIdTask )
 	{
 		try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_SELECT, WorkflowAppointmentAntsPlugin.getPlugin( ) ) )
         {
             daoUtil.setInt( 1, nIdTask );
             daoUtil.executeQuery( );
 
-            TaskAddAntsAppointmentConfig taskAddAntsAppointmentConfig = null;
+            TaskAntsAppointmentConfig taskAntsAppointmentConfig = null;
 
             if ( daoUtil.next( ) )
             {
-            	taskAddAntsAppointmentConfig = new TaskAddAntsAppointmentConfig( );
+            	taskAntsAppointmentConfig = new TaskAntsAppointmentConfig( );
                 int nIndex = 0;
 
-                taskAddAntsAppointmentConfig.setIdTask( daoUtil.getInt( ++nIndex ) );
-                taskAddAntsAppointmentConfig.setAntsApplicationNumberFieldName( daoUtil.getString( ++nIndex ) );
+                taskAntsAppointmentConfig.setIdTask( daoUtil.getInt( ++nIndex ) );
+                taskAntsAppointmentConfig.setIdForm( daoUtil.getInt( ++nIndex ) );
+                taskAntsAppointmentConfig.setIdFieldEntry( daoUtil.getInt( ++nIndex ) );
             }
             
-            return taskAddAntsAppointmentConfig;
+            return taskAntsAppointmentConfig;
         }
 	}
 
@@ -101,12 +103,13 @@ public class TaskAddAntsAppointmentConfigDAO implements ITaskConfigDAO<TaskAddAn
      * {@inheritDoc}
      */
 	@Override
-	public void store( TaskAddAntsAppointmentConfig config )
+	public void store( TaskAntsAppointmentConfig config )
 	{
 		try ( DAOUtil daoUtil = new DAOUtil( SQL_QUERY_UPDATE, WorkflowAppointmentAntsPlugin.getPlugin( ) ) )
         {
             int nIndex = 0;
-            daoUtil.setString( ++nIndex, config.getAntsApplicationNumberFieldName( ) );
+            daoUtil.setInt( ++nIndex, config.getIdForm( ) );
+            daoUtil.setInt( ++nIndex, config.getIdFieldEntry( ) );
             daoUtil.setInt( ++nIndex, config.getIdTask( ) );
             
             daoUtil.executeUpdate( );

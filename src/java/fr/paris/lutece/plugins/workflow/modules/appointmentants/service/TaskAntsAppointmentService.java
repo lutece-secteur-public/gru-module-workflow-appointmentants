@@ -60,7 +60,7 @@ import fr.paris.lutece.plugins.appointment.service.LocalizationService;
 import fr.paris.lutece.plugins.appointment.web.AppointmentApp;
 import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
 import fr.paris.lutece.plugins.genericattributes.business.Response;
-import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAddAntsAppointmentConfigDAO;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsAddAppointmentResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRest;
@@ -80,9 +80,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	public static final String BEAN_SERVICE = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + ".taskAntsAppointmentService";
 
 	@Inject
-	@Named( TaskAddAntsAppointmentConfigDAO.BEAN_NAME )
-	private TaskAddAntsAppointmentConfigDAO _task_add_appointment_dao;	
-
+	@Named( TaskAntsAppointmentConfigDAO.BEAN_NAME )
+	private TaskAntsAppointmentConfigDAO _task_ants_appointment_dao;	
+	
 	/**
 	 * ANTS' API URLs
 	 */
@@ -142,6 +142,10 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				appointment.getAdminUserCreate( ).isEmpty( );
 	}
 
+	/**
+	 * Build the URL used to add an appointment in the ANTS DB
+	 * 
+	 */
 	public static String buildAntsAddAppointmentUrl( String baseUrl, String addAppointmentUrl, String applicationId,
 			String managementUrl, String meetingPoint, String dateTime )
 	{
@@ -155,24 +159,6 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		urlItem.addParameter(URL_PARAMETER_APPOINTMENT_DATE, dateTime );
 
 		return urlItem.getUrl( );
-	}
-
-	/**
-	 * Build the URL used to add an appointment in the ANTS DB
-	 * 
-	 */
-	public static String oldBuildAntsAddAppointmentUrl( String antsBaseUrl, String antsAddUrl,
-			String antsApplicationIdParam, String antsManagementUrlParam,
-			String antsMeetingPointParam, String antsAppointmentDateParam)
-	{
-		StringBuilder antsApiUrl =  new StringBuilder( antsBaseUrl ).
-				append( antsAddUrl ).append( "?" ).
-				append( antsApplicationIdParam ).append( "&" ).
-				append( antsManagementUrlParam ).append( "&" ).
-				append( antsMeetingPointParam ).append( "&" ).
-				append( antsAppointmentDateParam );
-
-		return antsApiUrl.toString( );
 	}
 
 	public static boolean createAntsAppointment( String antsUrl ) throws HttpAccessException, IOException
@@ -371,10 +357,26 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		return applicationValuesList;
 	}
-
-	@Override
-	public String getAntsApplicationFieldName( int idTask )
+	
+	public static List<String> getAntsApplicationValues( int idAppointment, int idEntry )
 	{
-		return _task_add_appointment_dao.load( idTask ).getAntsApplicationNumberFieldName( );
+		List<Response> responseList = AppointmentResponseService.findListResponse( idAppointment );
+
+		List<String> applicationValuesList = new ArrayList<>( );
+
+		for( Response response : responseList )
+		{
+			if( response.getEntry( ).getIdEntry( ) == idEntry )
+			{
+				applicationValuesList.add( response.getResponseValue( ) );
+			}
+		}
+		return applicationValuesList;
+	}
+	
+	@Override
+	public int getAntsApplicationFieldName( int idTask )
+	{
+		return _task_ants_appointment_dao.load( idTask ).getIdFieldEntry( ) ;
 	}
 }

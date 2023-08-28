@@ -19,7 +19,7 @@
 		p:key="taskTaskAddAntsAppointment"
 		p:titleI18nKey="module.workflow.appointmentants.add_appointment.task_title"
 		p:beanName="workflow-appointmentants.taskAddAntsAppointment"
-		p:configBeanName="workflow-appointmentants.taskAddAntsAppointmentConfig"
+		p:configBeanName="workflow-appointmentants.taskAntsAppointmentConfig"
 		p:configRequired="true" p:formTaskRequired="false"
 		p:taskForAutomaticAction="true" />
 
@@ -28,18 +28,18 @@
 		scope="prototype" />
 
 	<!-- Tasks Config -->
-	<bean id="workflow-appointmentants.taskAddAntsAppointmentConfig"
-		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAddAntsAppointmentConfig"
+	<bean id="workflow-appointmentants.taskAntsAppointmentConfig"
+		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfig"
 		scope="prototype" />
         
 	<!-- DAO -->
-	<bean id="workflow-appointmentants.taskAddAntsAppointmentConfigDAO"
-		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAddAntsAppointmentConfigDAO" />
+	<bean id="workflow-appointmentants.taskAntsAppointmentConfigDAO"
+		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO" />
 
 	<!-- Services -->
-	<bean id="workflow-appointmentants.taskAddAntsAppointmentConfigService"
+	<bean id="workflow-appointmentants.taskAntsAppointmentConfigService"
 		class="fr.paris.lutece.plugins.workflowcore.service.config.TaskConfigService"
-		p:taskConfigDAO-ref="workflow-appointmentants.taskAddAntsAppointmentConfigDAO" />
+		p:taskConfigDAO-ref="workflow-appointmentants.taskAntsAppointmentConfigDAO" />
 
 	<bean id="workflow-appointmentants.taskAntsAppointmentService"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.service.TaskAntsAppointmentService" />
@@ -48,5 +48,5 @@
 	<bean id="workflow-appointmentants.taskAddAntsAppointmentComponent"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.web.TaskAddAntsAppointmentComponent"
 		p:taskType-ref="workflow-appointmentants.taskTaskAddAntsAppointment"
-		p:taskConfigService-ref="workflow-appointmentants.taskAddAntsAppointmentConfigService" />
+		p:taskConfigService-ref="workflow-appointmentants.taskAntsAppointmentConfigService" />
 </beans>

@@ -33,7 +33,13 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 
+import javax.servlet.http.HttpServletRequest;
+
 public interface ITaskAntsAppointmentService {
 	
+	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask );
+	
+	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask );
+
 	public int getAntsApplicationFieldName( int idTask );
 }

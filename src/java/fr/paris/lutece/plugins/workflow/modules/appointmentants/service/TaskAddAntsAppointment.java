@@ -95,7 +95,7 @@ public class TaskAddAntsAppointment extends SimpleTask
 
 		try
 		{
-			return createAntsAppointment( request, resourceHistory.getIdResource( ), this.getId( ) );
+			return _antsAppointmentService.createAntsAppointment(request, resourceHistory.getIdResource( ), this.getId( ) );
 		}
 		catch ( Exception e )
 		{
@@ -144,7 +144,7 @@ public class TaskAddAntsAppointment extends SimpleTask
 							);
 					try {
 						// Create the appointment on the ANTS database
-						return TaskAntsAppointmentService.createAntsAppointment( antsURL );
+						return TaskAntsAppointmentService.addAntsAppointmentRestCall( antsURL );
 					}
 					catch ( HttpAccessException h )
 					{

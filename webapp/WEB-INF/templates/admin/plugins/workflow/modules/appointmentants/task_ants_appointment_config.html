@@ -1,6 +1,6 @@
 <@fieldSet legend='${taskTitle!}'>
 	<@formGroup labelFor='id_form_selection' labelKey='#i18n{module.workflow.appointmentants.ants.task_form_name}' mandatory=true>
-			<@select name='id_form_selection' items=forms_list id='id_form_selection' default_value='${(config.idForm)!0}' />
+			<@select name='id_form_selection' items=forms_list id='id_form_selection' default_value='${(id_form)!0}' />
 			<@button type='submit' value='selectForm' name='selectForm' hideTitle=['all'] buttonIcon='check' />
 	</@formGroup>
 	<@formGroup labelFor='id_form_field_selection' labelKey='#i18n{module.workflow.appointmentants.ants.task_application_number_field}'>

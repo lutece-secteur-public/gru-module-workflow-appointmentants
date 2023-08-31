@@ -135,7 +135,123 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	private TaskAntsAppointmentService( )
 	{
 	}
+	
+	@Override
+	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
+	{
+		Appointment appointment = AppointmentService.findAppointmentById( idAppointment );
 
+		Map<String, String> applicationContent = getAppointmentData( request, idAppointment );
+
+		// Only create the appointment in the ANTS DB if it was created by a user
+		if( isAppointmentCreatedInFrontOffice( appointment ) )
+		{			
+			List<String> applicationNumberList = getAntsApplicationValues(
+					idAppointment,
+					getAntsApplicationFieldName( idTask )
+					);
+			
+			// If the appointment has no application number(s), then stop the task
+			if( CollectionUtils.isEmpty( applicationNumberList ) )
+			{
+				return false;
+			}
+			
+			// Check if the application number used are valid and allow appointments creation
+			if( isApplicationNumberListValidForCreation( applicationNumberList ) ) {
+
+				// For each application number available, create a new ANTS appointment
+				for( String appplicationNumber : applicationNumberList ) {
+
+					// Build the ANTS URL used to create a new appointment
+					String antsURL = buildAntsAddAppointmentUrl(
+							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
+							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_ADD_APPOINTMENT),
+							appplicationNumber,
+							applicationContent.get( KEY_URL ),
+							applicationContent.get( KEY_LOCATION ),
+							applicationContent.get( KEY_DATE )
+							);
+					try {
+						// Create the appointment on the ANTS database
+						return addAntsAppointmentRestCall( antsURL );
+					}
+					catch ( HttpAccessException h )
+					{
+						AppLogService.error( BEAN_SERVICE, h );
+					}
+					catch ( IOException i )
+					{
+						AppLogService.error( BEAN_SERVICE, i );
+					}
+					catch( Exception e )
+					{
+						AppLogService.error( BEAN_SERVICE, e );
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	@Override
+	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
+	{
+		Appointment appointment = AppointmentService.findAppointmentById( idAppointment );
+
+		Map<String, String> applicationContent = getAppointmentData( request, idAppointment );
+
+		// Only execute the task if the appointment was created by a user
+		if( isAppointmentCreatedInFrontOffice( appointment ) )
+		{
+			// Retrieve the application number(s) from the current appointment
+			List<String> applicationNumberList = getAntsApplicationValues(
+					idAppointment,
+					getAntsApplicationFieldName( idTask )
+					);
+			
+			// If the appointment has no application number(s), then stop the task
+			if( CollectionUtils.isEmpty( applicationNumberList ) )
+			{
+				return false;
+			}
+			
+			// Check if the application numbers used are valid and still allow the appointments to be deleted
+			if( isApplicationNumberListValidForDeletion( applicationNumberList ) ) {
+
+				// For each application number available, delete any existing ANTS appointment
+				for( String appplicationNumber : applicationNumberList ) {
+
+					// Build the ANTS URL used to delete an appointment
+					String antsURL = buildAntsDeleteAppointmentUrl(
+							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
+							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT),
+							appplicationNumber,
+							applicationContent.get( KEY_LOCATION ),
+							applicationContent.get( KEY_DATE )
+							);
+					try {
+						// Delete the appointment from the ANTS database
+						return deleteAntsAppointmentRestCall( antsURL );
+					}
+					catch ( HttpAccessException h )
+					{
+						AppLogService.error( BEAN_SERVICE, h );
+					}
+					catch ( IOException i )
+					{
+						AppLogService.error( BEAN_SERVICE, i );
+					}
+					catch( Exception e )
+					{
+						AppLogService.error( BEAN_SERVICE, e );
+					}
+				}
+			}
+		}
+		return false;
+	}
+	
 	/**
 	 * Check if an appointment was created from the front office or from the back office
 	 * @param appointment the appointment to check
@@ -169,7 +285,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return urlItem.getUrl( );
 	}
 
-	public static boolean createAntsAppointment( String antsUrl ) throws HttpAccessException, IOException
+	public static boolean addAntsAppointmentRestCall( String antsUrl ) throws HttpAccessException, IOException
 	{
 		String response = TaskAntsAppointmentRest.addAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
 
@@ -194,7 +310,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return urlItem.getUrl( );
 	}
 
-	public static boolean deleteAntsAppointment( String antsUrl ) throws HttpAccessException, IOException
+	public static boolean deleteAntsAppointmentRestCall( String antsUrl ) throws HttpAccessException, IOException
 	{
 		String response = TaskAntsAppointmentRest.deleteAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
 

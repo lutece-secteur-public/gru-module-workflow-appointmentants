@@ -357,7 +357,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		return applicationValuesList;
 	}
-	
+  
 	public static List<String> getAntsApplicationValues( int idAppointment, int idEntry )
 	{
 		List<Response> responseList = AppointmentResponseService.findListResponse( idAppointment );

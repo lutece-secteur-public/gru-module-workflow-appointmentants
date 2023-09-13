@@ -131,7 +131,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	public static final String ACTION_ADD = "add";
 	public static final String ACTION_DELETE = "delete";
-	
+
 	private TaskAntsAppointmentService( )
 	{
 	}
@@ -260,7 +260,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		String response = "";
 
 		List<AntsStatusResponsePOJO> statusObjectsList = new ArrayList<>( );
-		
+
 		try {
 			response = TaskAntsAppointmentRest.getAntsAppointmentStatus( getStatusUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
 		}

@@ -33,53 +33,47 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.web;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.WorkflowAppointmentAntsPlugin;
-import fr.paris.lutece.plugins.workflow.web.task.NoFormTaskComponent;
 import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
 import fr.paris.lutece.plugins.workflowcore.service.task.ITask;
-import fr.paris.lutece.portal.service.template.AppTemplateService;
-import fr.paris.lutece.util.html.HtmlTemplate;
+import fr.paris.lutece.portal.service.i18n.I18nService;
 
 /**
  * 
  * Component used to handle the interface / visual aspect of the "Add ANTS appointment" task
  *
  */
-public class TaskAddAntsAppointmentComponent extends NoFormTaskComponent
+public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointmentComponent
 {
-	// TEMPLATES
-	private static final String TEMPLATE_CONFIG = "admin/plugins/workflow/modules/appointmentants/task_add_ants_appointment_config.html";
-	
-	// MARKERS
-	private static final String MARK_CONFIG = "config";
-
 	@Inject
 	@Named( WorkflowAppointmentAntsPlugin.BEAN_CONFIG )
 	private ITaskConfigService _config;
 
+	private static final String PROPERTY_TASK_TITLE = "module.workflow.appointmentants.add_appointment.task_title";
+	
+	/**
+     * {@inheritDoc}
+     */
 	@Override
 	public String getDisplayConfigForm( HttpServletRequest request, Locale locale, ITask task )
 	{
-		Map<String, Object> model = new HashMap<>( );
-
-		model.put( MARK_CONFIG, _config.findByPrimaryKey( task.getId( ) ) );
+		String taskTitle = I18nService.getLocalizedString( PROPERTY_TASK_TITLE, locale );
 		
-		HtmlTemplate html = AppTemplateService.getTemplate( TEMPLATE_CONFIG, locale, model );
-
-		return html.getHtml( );
+		return getDisplayConfigForm( taskTitle, locale, task, _config );
 	}
 
-	@Override
-	public String getDisplayTaskInformation( int nIdHistory, HttpServletRequest request, Locale locale, ITask task )
-	{
-		return null;
-	}
+	/**
+     * {@inheritDoc}
+     */
+    @Override
+    public String doSaveConfig( HttpServletRequest request, Locale locale, ITask task )
+    {
+        return doSaveConfig( request, task, _config );
+    }
 }

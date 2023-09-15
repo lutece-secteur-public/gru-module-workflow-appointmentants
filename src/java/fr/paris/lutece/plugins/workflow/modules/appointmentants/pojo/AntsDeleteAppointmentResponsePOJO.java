@@ -31,9 +31,28 @@
  *
  * License 1.0
  */
-package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
+package fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo;
 
-public interface ITaskAntsAppointmentService {
-	
-	public int getAntsApplicationFieldName( int idTask );
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonIgnoreProperties( ignoreUnknown = true )
+public class AntsDeleteAppointmentResponsePOJO {
+
+	@JsonProperty( "rowcount" )
+	private int rowcount;
+
+	/**
+	 * @return the rowcount
+	 */
+	public int getRowcount() {
+		return rowcount;
+	}
+
+	/**
+	 * @param rowcount the rowcount to set
+	 */
+	public void setRowcount(int rowcount) {
+		this.rowcount = rowcount;
+	}
 }

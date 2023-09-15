@@ -31,9 +31,33 @@
  *
  * License 1.0
  */
-package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
+package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
 
-public interface ITaskAntsAppointmentService {
+import fr.paris.lutece.plugins.workflowcore.business.config.TaskConfig;
+
+public class TaskAntsAppointmentConfig extends TaskConfig {
 	
-	public int getAntsApplicationFieldName( int idTask );
+	private int _nIdForm;
+
+	private int _nIdFieldEntry;
+
+	public int getIdForm( )
+	{
+		return _nIdForm;
+	}
+
+	public void setIdForm( int formId )
+	{
+		this._nIdForm = formId;
+	}
+
+	public int getIdFieldEntry( )
+	{
+		return _nIdFieldEntry;
+	}
+
+	public void setIdFieldEntry( int fieldEntryId )
+	{
+		this._nIdFieldEntry = fieldEntryId;
+	}
 }

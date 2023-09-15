@@ -33,21 +33,13 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.collections.CollectionUtils;
-
 import fr.paris.lutece.api.user.User;
-import fr.paris.lutece.plugins.appointment.business.appointment.Appointment;
-import fr.paris.lutece.plugins.appointment.service.AppointmentService;
-import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRestConstants;
 import fr.paris.lutece.plugins.workflowcore.business.resource.ResourceHistory;
 import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
 import fr.paris.lutece.plugins.workflowcore.service.resource.IResourceHistoryService;
@@ -55,8 +47,6 @@ import fr.paris.lutece.plugins.workflowcore.service.resource.ResourceHistoryServ
 import fr.paris.lutece.plugins.workflowcore.service.task.SimpleTask;
 import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.util.AppLogService;
-import fr.paris.lutece.portal.service.util.AppPropertiesService;
-import fr.paris.lutece.util.httpaccess.HttpAccessException;
 
 /**
  * 
@@ -102,66 +92,6 @@ public class TaskDeleteAntsAppointment extends SimpleTask
 			AppLogService.error( CLASS_NAME, e );
 			return false;
 		}
-	}
-
-	/**
-	 * Use the ANTS API to delete an existing appointment from their database
-	 */
-	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
-	{
-		Appointment appointment = AppointmentService.findAppointmentById( idAppointment );
-
-		Map<String, String> applicationContent = TaskAntsAppointmentService.getAppointmentData( request, idAppointment );
-
-		// Only execute the task if the appointment was created by a user
-		if( TaskAntsAppointmentService.isAppointmentCreatedInFrontOffice( appointment ) )
-		{
-			// Retrieve the application number(s) from the current appointment
-			List<String> applicationNumberList = TaskAntsAppointmentService.getAntsApplicationValues(
-					idAppointment,
-					_antsAppointmentService.getAntsApplicationFieldName( idTask )
-					);
-			
-			// If the appointment has no application number(s), then stop the task
-			if( CollectionUtils.isEmpty( applicationNumberList ) )
-			{
-				return false;
-			}
-			
-			// Check if the application numbers used are valid and still allow the appointments to be deleted
-			if( TaskAntsAppointmentService.isApplicationNumberListValidForDeletion( applicationNumberList ) ) {
-
-				// For each application number available, delete any existing ANTS appointment
-				for( String appplicationNumber : applicationNumberList ) {
-
-					// Build the ANTS URL used to delete an appointment
-					String antsURL = TaskAntsAppointmentService.buildAntsDeleteAppointmentUrl(
-							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
-							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT),
-							appplicationNumber,
-							applicationContent.get( TaskAntsAppointmentService.KEY_LOCATION ),
-							applicationContent.get( TaskAntsAppointmentService.KEY_DATE )
-							);
-					try {
-						// Delete the appointment from the ANTS database
-						return TaskAntsAppointmentService.deleteAntsAppointmentRestCall( antsURL );
-					}
-					catch ( HttpAccessException h )
-					{
-						AppLogService.error( CLASS_NAME, h );
-					}
-					catch ( IOException i )
-					{
-						AppLogService.error( CLASS_NAME, i );
-					}
-					catch( Exception e )
-					{
-						AppLogService.error( CLASS_NAME, e );
-					}
-				}
-			}
-		}
-		return false;
 	}
 
 	@Override

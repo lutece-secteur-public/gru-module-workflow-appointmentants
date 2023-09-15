@@ -1,4 +1,5 @@
-<@fieldSet legend='#i18n{module.workflow.appointmentants.add_appointment.task_title}'>
+
+<@fieldSet legend='${taskTitle!}'>
 	<@formGroup labelFor='id_form_selection' labelKey='#i18n{module.workflow.appointmentants.ants.task_form_name}' mandatory=true>
 			<@select name='id_form_selection' items=forms_list id='id_form_selection' default_value='${(config.idForm)!0}' />
 			<@button type='submit' value='selectForm' name='selectForm' hideTitle=['all'] buttonIcon='check' />

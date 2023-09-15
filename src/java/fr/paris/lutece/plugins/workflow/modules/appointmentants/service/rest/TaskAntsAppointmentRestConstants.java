@@ -40,6 +40,7 @@ public class TaskAntsAppointmentRestConstants {
 	// PATHS
 	public static final String ANTS_URL = "ants.api.url.base";
 	public static final String ANTS_URL_ADD_APPOINTMENT = "ants.api.url.add.appointment";
+	public static final String ANTS_URL_DELETE_APPOINTMENT = "ants.api.url.delete.appointment";
 	public static final String ANTS_URL_STATUS_APPOINTMENT = "ants.api.url.status.appointment";
 
 	// HEADERS

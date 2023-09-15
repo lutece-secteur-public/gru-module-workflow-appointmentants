@@ -46,6 +46,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -62,6 +63,7 @@ import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
 import fr.paris.lutece.plugins.genericattributes.business.Response;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsAddAppointmentResponsePOJO;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsDeleteAppointmentResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRest;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRestConstants;
@@ -122,7 +124,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	public static final String KEY_URL = "url";
 	public static final String KEY_LOCATION = "location";
-	public static final String KEY_DATE = "date";	
+	public static final String KEY_DATE = "date";
+	
+	/**
+	 * Actions
+	 */
+	public static final String ACTION_ADD = "add";
+	public static final String ACTION_DELETE = "delete";
 
 	private TaskAntsAppointmentService( )
 	{
@@ -166,6 +174,31 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		String response = TaskAntsAppointmentRest.addAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
 
 		return isAppointmentCreationSuccessful( response );
+	}
+	
+	/**
+	 * Build the URL used to delete an appointment from the ANTS DB
+	 * 
+	 */
+	public static String buildAntsDeleteAppointmentUrl( String baseUrl, String deleteAppointmentUrl, String applicationId,
+			String meetingPoint, String dateTime )
+	{
+		StringBuilder antsApiUrl =  new StringBuilder( baseUrl ).
+				append( deleteAppointmentUrl );
+
+		UrlItem urlItem = new UrlItem( antsApiUrl.toString( ) );
+		urlItem.addParameter(URL_PARAMETER_APPLICATION_ID, applicationId );
+		urlItem.addParameter(URL_PARAMETER_MEETING_POINT, meetingPoint );
+		urlItem.addParameter(URL_PARAMETER_APPOINTMENT_DATE, dateTime );
+
+		return urlItem.getUrl( );
+	}
+
+	public static boolean deleteAntsAppointment( String antsUrl ) throws HttpAccessException, IOException
+	{
+		String response = TaskAntsAppointmentRest.deleteAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
+
+		return isAppointmentDeletionSuccessful( response );
 	}
 
 	/**
@@ -213,14 +246,20 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		return appointmentDataMap;
 	}
-
-	public static boolean isApplicationNumberStatusValid( List<String> applicationNumberList ) 
+	
+	/**
+	 * Build a list of Objects containing the status of every application numbers given as parameter
+	 * @param applicationNumberList list of the application numbers for which the status will be retrieved 
+	 * @return a list of Objects representing the status of the application numbers, returns an empty List if
+	 * no element was found
+	 */
+	public static List<AntsStatusResponsePOJO> getAntsStatusResponseAsObjects( List<String> applicationNumberList ) 
 	{
 		String getStatusUrl = buildAntsGetStatusAppointmentUrl( applicationNumberList );
 
-		String validated = STATUS_VALIDATED;
-
 		String response = "";
+
+		List<AntsStatusResponsePOJO> statusObjectsList = new ArrayList<>( );
 
 		try {
 			response = TaskAntsAppointmentRest.getAntsAppointmentStatus( getStatusUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
@@ -238,32 +277,14 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		{
 			try
 			{
-				List<AntsStatusResponsePOJO> responseObjectList = getStatusResponseAsObject( response );
-
-				// Check the validity of each application number's status and appointments
-				for( AntsStatusResponsePOJO application : responseObjectList)
-				{
-					/* If the application number hasn't been validated, or if it already has
-					 * appointments tied to it, then we shouldn't create any appointment
-					 * */
-					if( !StringUtils.equals( application.getStatus( ), validated ) ||
-							ArrayUtils.isNotEmpty( application.getAppointments( ) ) )
-					{
-						return false;
-					}
-				}
+				statusObjectsList = getStatusResponseAsObject( response );
 			}
 			catch( IOException e)
 			{
 				AppLogService.error( BEAN_SERVICE, e );
-				return false;
 			}
 		}
-		else
-		{
-			return false;
-		}
-		return true;
+		return statusObjectsList;
 	}
 
 	/**
@@ -284,6 +305,62 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return urlItem.getUrl();
 	}
 
+	/**
+	 * Check if the status of the given application numbers is valid and allows to add new appointments ('validated' status
+	 * and empty list of appointments)
+	 */
+	public static boolean isApplicationNumberListValidForCreation( List<String> applicationNumberList ) 
+	{
+		List<AntsStatusResponsePOJO> statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
+		
+		if( CollectionUtils.isEmpty( statusResponseList ) )
+		{
+			return false;
+		}
+		
+		// Check the validity of each application number's status and appointments
+		for( AntsStatusResponsePOJO statusResponse : statusResponseList )
+		{
+			/* If the application number hasn't been validated, or if it already has
+			 * appointments tied to it, then we shouldn't create any appointment
+			 * */
+			if( !StringUtils.equals( statusResponse.getStatus( ), STATUS_VALIDATED ) ||
+					ArrayUtils.isNotEmpty( statusResponse.getAppointments( ) ) )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Check if the status of the given application numbers is valid and allows to delete an existing
+	 * appointments ('validated' status and at least 1 element in its appointments list)
+	 */
+	public static boolean isApplicationNumberListValidForDeletion( List<String> applicationNumberList ) 
+	{
+		List<AntsStatusResponsePOJO> statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
+
+		if( CollectionUtils.isEmpty( statusResponseList ) )
+		{
+			return false;
+		}
+		
+		// Check the validity of each application number's status and appointments
+		for( AntsStatusResponsePOJO statusResponse : statusResponseList )
+		{
+			/* If the application number hasn't been validated, and if it has no
+			 * appointment tied to it, then we can't delete it
+			 * */
+			if( !StringUtils.equals( statusResponse.getStatus( ), STATUS_VALIDATED ) &&
+					ArrayUtils.isEmpty( statusResponse.getAppointments( ) ) )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	
 	/**
 	 * Creates a List of {@link AntsStatusResponsePOJO} Objects from a json String containing the status
 	 * and appointments list that were returned by the ANTS API
@@ -342,6 +419,25 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return responseObject.isSuccess( );
 	}
 	
+	/**
+	 * When deleting an appointment with the ANTS API, check whether the http response
+	 * returned a positive result (number of appointments deleted > 0) or not (0)
+	 *
+	 */
+	public static boolean isAppointmentDeletionSuccessful( String response ) throws IOException
+	{
+		ObjectMapper mapper = new ObjectMapper( );
+
+		AntsDeleteAppointmentResponsePOJO responseObject =
+				mapper.readValue( response, AntsDeleteAppointmentResponsePOJO.class );
+
+		/**
+		 * If rowcount == 0, then no appointment was deleted
+		 * If it is > 0, then 1 or more appointments were successfully deleted
+		 */
+		return responseObject.getRowcount( ) > 0;
+	}
+	
 	public static List<String> getAntsApplicationValues( int idAppointment, String title )
 	{
 		List<Response> responseList = AppointmentResponseService.findListResponse( idAppointment );
@@ -357,7 +453,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		return applicationValuesList;
 	}
-  
+	
 	public static List<String> getAntsApplicationValues( int idAppointment, int idEntry )
 	{
 		List<Response> responseList = AppointmentResponseService.findListResponse( idAppointment );

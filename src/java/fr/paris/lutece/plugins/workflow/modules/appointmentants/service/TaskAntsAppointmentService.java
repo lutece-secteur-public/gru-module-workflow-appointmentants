@@ -85,7 +85,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	@Inject
 	@Named( TaskAntsAppointmentConfigDAO.BEAN_NAME )
 	private TaskAntsAppointmentConfigDAO _task_ants_appointment_dao;	
-	
+
 	/**
 	 * ANTS' API URLs
 	 */
@@ -113,7 +113,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	private static final String PROPERTY_API_OPT_AUTH_TOKEN_VALUE =
 			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_VALUE );
-	
+
 	/**
 	 * Status value of an ANTS appointment ("validated", "consumed", etc.)
 	 */
@@ -125,151 +125,141 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	private static final String APPLICATION_NUMBERS_SEPARATOR =
 			AppPropertiesService.getProperty( "ants.api.application.numbers.separator" );
-	
+
 	public static final String KEY_URL = "url";
 	public static final String KEY_LOCATION = "location";
 	public static final String KEY_DATE = "date";
-	
+
 	private TaskAntsAppointmentService( )
 	{
 	}
-	
+
 	/**
 	 * Create an appointment in the ANTS database
 	 */
 	@Override
 	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
 	{
-		Appointment appointment = AppointmentService.findAppointmentById( idAppointment );
-
 		Map<String, String> applicationContent = getAppointmentData( request, idAppointment );
 
 		boolean isAppointmentCreated = false;
-		
-		// Only create the appointment in the ANTS DB if it was created by a user
-		if( isAppointmentCreatedInFrontOffice( appointment ) )
+
+		List<String> applicationNumberList = getAntsApplicationValues(
+				idAppointment,
+				getAntsApplicationFieldId( idTask )
+				);
+
+		// If the appointment has no application number(s), then stop the task
+		if( CollectionUtils.isEmpty( applicationNumberList ) )
 		{
-			List<String> applicationNumberList = getAntsApplicationValues(
-					idAppointment,
-					getAntsApplicationFieldId( idTask )
-					);
-			
-			// If the appointment has no application number(s), then stop the task
-			if( CollectionUtils.isEmpty( applicationNumberList ) )
-			{
-				return isAppointmentCreated;
-			}
-			
-			// Check if the application number used are valid and allow appointments creation
-			if( isApplicationNumberListValidForCreation( applicationNumberList ) ) {
+			// We return true, so the task stops with a positive result
+			return true;
+		}
 
-				// For each application number available, create a new ANTS appointment
-				for( String appplicationNumber : applicationNumberList ) {
+		// Check if the application number used are valid and allow appointments creation
+		if( isApplicationNumberListValidForCreation( applicationNumberList ) ) {
 
-					// Build the ANTS URL used to create a new appointment
-					String antsURL = buildAntsAddAppointmentUrl(
-							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
-							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_ADD_APPOINTMENT),
-							appplicationNumber,
-							applicationContent.get( KEY_URL ),
-							applicationContent.get( KEY_LOCATION ),
-							applicationContent.get( KEY_DATE )
-							);
-					try {
-						// Create the appointment on the ANTS database
-						isAppointmentCreated = addAntsAppointmentRestCall( antsURL );
-						
-						 if( !isAppointmentCreated )
-						 {
-							 return isAppointmentCreated;
-						 }
-					}
-					catch ( HttpAccessException h )
+			// For each application number available, create a new ANTS appointment
+			for( String appplicationNumber : applicationNumberList ) {
+
+				// Build the ANTS URL used to create a new appointment
+				String antsURL = buildAntsAddAppointmentUrl(
+						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
+						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_ADD_APPOINTMENT),
+						appplicationNumber,
+						applicationContent.get( KEY_URL ),
+						applicationContent.get( KEY_LOCATION ),
+						applicationContent.get( KEY_DATE )
+						);
+				try {
+					// Create the appointment on the ANTS database
+					isAppointmentCreated = addAntsAppointmentRestCall( antsURL );
+
+					if( !isAppointmentCreated )
 					{
-						AppLogService.error( BEAN_SERVICE, h );
+						return isAppointmentCreated;
 					}
-					catch ( IOException i )
-					{
-						AppLogService.error( BEAN_SERVICE, i );
-					}
-					catch( Exception e )
-					{
-						AppLogService.error( BEAN_SERVICE, e );
-					}
+				}
+				catch ( HttpAccessException h )
+				{
+					AppLogService.error( BEAN_SERVICE, h );
+				}
+				catch ( IOException i )
+				{
+					AppLogService.error( BEAN_SERVICE, i );
+				}
+				catch( Exception e )
+				{
+					AppLogService.error( BEAN_SERVICE, e );
 				}
 			}
 		}
 		return isAppointmentCreated;
 	}
-	
+
 	/**
 	 * Remove an appointment from the ANTS database
 	 */
 	@Override
 	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
 	{
-		Appointment appointment = AppointmentService.findAppointmentById( idAppointment );
-
 		Map<String, String> applicationContent = getAppointmentData( request, idAppointment );
 
 		boolean isAppointmentDeleted = false;
-		 
-		// Only execute the task if the appointment was created by a user
-		if( isAppointmentCreatedInFrontOffice( appointment ) )
+
+		// Retrieve the application number(s) from the current appointment
+		List<String> applicationNumberList = getAntsApplicationValues(
+				idAppointment,
+				getAntsApplicationFieldId( idTask )
+				);
+
+		// If the appointment has no application number(s), then stop the task
+		if( CollectionUtils.isEmpty( applicationNumberList ) )
 		{
-			// Retrieve the application number(s) from the current appointment
-			List<String> applicationNumberList = getAntsApplicationValues(
-					idAppointment,
-					getAntsApplicationFieldId( idTask )
-					);
-			
-			// If the appointment has no application number(s), then stop the task
-			if( CollectionUtils.isEmpty( applicationNumberList ) )
-			{
-				return isAppointmentDeleted;
-			}
-			
-			// Check if the application numbers used are valid and still allow the appointments to be deleted
-			if( isApplicationNumberListValidForDeletion( applicationNumberList ) ) {
+			// We return true, so the task stops with a positive result
+			return true;
+		}
 
-				// For each application number available, delete any existing ANTS appointment
-				for( String appplicationNumber : applicationNumberList ) {
+		// Check if the application numbers used are valid and still allow the appointments to be deleted
+		if( isApplicationNumberListValidForDeletion( applicationNumberList ) ) {
 
-					// Build the ANTS URL used to delete an appointment
-					String antsURL = buildAntsDeleteAppointmentUrl(
-							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
-							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT),
-							appplicationNumber,
-							applicationContent.get( KEY_LOCATION ),
-							applicationContent.get( KEY_DATE )
-							);
-					try {
-						// Delete the appointment from the ANTS database
-						isAppointmentDeleted = deleteAntsAppointmentRestCall( antsURL );
-						
-						if( !isAppointmentDeleted )
-						{
-							return isAppointmentDeleted;
-						}
-					}
-					catch ( HttpAccessException h )
+			// For each application number available, delete any existing ANTS appointment
+			for( String appplicationNumber : applicationNumberList ) {
+
+				// Build the ANTS URL used to delete an appointment
+				String antsURL = buildAntsDeleteAppointmentUrl(
+						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
+						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT),
+						appplicationNumber,
+						applicationContent.get( KEY_LOCATION ),
+						applicationContent.get( KEY_DATE )
+						);
+				try {
+					// Delete the appointment from the ANTS database
+					isAppointmentDeleted = deleteAntsAppointmentRestCall( antsURL );
+
+					if( !isAppointmentDeleted )
 					{
-						AppLogService.error( BEAN_SERVICE, h );
+						return isAppointmentDeleted;
 					}
-					catch ( IOException i )
-					{
-						AppLogService.error( BEAN_SERVICE, i );
-					}
-					catch( Exception e )
-					{
-						AppLogService.error( BEAN_SERVICE, e );
-					}
+				}
+				catch ( HttpAccessException h )
+				{
+					AppLogService.error( BEAN_SERVICE, h );
+				}
+				catch ( IOException i )
+				{
+					AppLogService.error( BEAN_SERVICE, i );
+				}
+				catch( Exception e )
+				{
+					AppLogService.error( BEAN_SERVICE, e );
 				}
 			}
 		}
 		return isAppointmentDeleted;
 	}
-	
+
 	/**
 	 * Check if an appointment was created from the front office or from the back office
 	 * @param appointment the appointment to check
@@ -309,7 +299,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		return isAppointmentCreationSuccessful( response );
 	}
-	
+
 	/**
 	 * Build the URL used to delete an appointment from the ANTS DB
 	 * 
@@ -380,7 +370,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		return appointmentDataMap;
 	}
-	
+
 	/**
 	 * Build a list of Objects containing the status of every application numbers given as parameter
 	 * @param applicationNumberList list of the application numbers for which the status will be retrieved 
@@ -446,12 +436,12 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	public static boolean isApplicationNumberListValidForCreation( List<String> applicationNumberList ) 
 	{
 		List<AntsStatusResponsePOJO> statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
-		
+
 		if( CollectionUtils.isEmpty( statusResponseList ) )
 		{
 			return false;
 		}
-		
+
 		// Check the validity of each application number's status and appointments
 		for( AntsStatusResponsePOJO statusResponse : statusResponseList )
 		{
@@ -466,7 +456,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Check if the status of the given application numbers is valid and allows to delete an existing
 	 * appointments ('validated' status and at least 1 element in its appointments list)
@@ -479,7 +469,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		{
 			return false;
 		}
-		
+
 		// Check the validity of each application number's status and appointments
 		for( AntsStatusResponsePOJO statusResponse : statusResponseList )
 		{
@@ -494,7 +484,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Creates a List of {@link AntsStatusResponsePOJO} Objects from a json String containing the status
 	 * and appointments list that were returned by the ANTS API
@@ -552,7 +542,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		return responseObject.isSuccess( );
 	}
-	
+
 	/**
 	 * When deleting an appointment with the ANTS API, check whether the http response
 	 * returned a positive result (number of appointments deleted > 0) or not (0)
@@ -571,7 +561,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		 */
 		return responseObject.getRowcount( ) > 0;
 	}
-	
+
 	/**
 	 * Get the list of application numbers tied to an appointment
 	 * @param idAppointment ID of the appointment
@@ -590,7 +580,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			if( response.getEntry( ).getIdEntry( ) == entryFieldId )
 			{
 				String responseValue = response.getResponseValue( );
-				
+
 				/* Check if the application numbers are in the same String, only separated by a specific character.
 				 * If they are not, then we consider that each number is saved in its own Response
 				 * */
@@ -607,11 +597,11 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		return applicationValuesList;
 	}
-	
+
 	/**
-	 * Get the title / name of the entry field where the ANTS application numbers of an appointment are saved
+	 * Get the ID of the entry field where the ANTS application numbers of an appointment are saved
 	 * @param idTask ID of the task being executed
-	 * @return the title of the entry field
+	 * @return the ID of the entry field
 	 */
 	@Override
 	public int getAntsApplicationFieldId( int idTask )

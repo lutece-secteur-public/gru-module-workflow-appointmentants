@@ -352,7 +352,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		appointmentDataMap.put(
 				KEY_LOCATION,
-				appointmentLocation );
+				cleanUrl( appointmentLocation ).replace( "+" , "%20" ) );
 
 		// Get the appointment's date and time
 		String appointmentDateTime = "";

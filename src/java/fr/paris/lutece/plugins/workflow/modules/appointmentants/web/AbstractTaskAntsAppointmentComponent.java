@@ -194,19 +194,25 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 	{
 		if( idForm != -1 )
 		{
-			List<Entry> entriesList =  EntryService.findListEntry( idForm );
-			
+			List<Entry> entriesList = EntryService.findListEntry( idForm );
+
 			ReferenceList entriesRefList = new ReferenceList( );
-            for ( Entry entry : entriesList )
-            {
-                entriesRefList.addItem( entry.getIdEntry( ), entry.getTitle( ) );
-            }
-            return entriesRefList;
-        }
-        else
-        {
-            return new ReferenceList( );
-        }
+			for ( Entry entry : entriesList )
+			{
+				/* Only retrieve the Entry if it has a title. Their title is used to identify them
+				 * when they are in a drop-down list
+				 * */
+				if( StringUtils.isNotEmpty( entry.getTitle( ) ) )
+				{
+					entriesRefList.addItem( entry.getIdEntry( ), entry.getTitle( ) );
+				}
+			}
+			return entriesRefList;
+		}
+		else
+		{
+			return new ReferenceList( );
+		}
 	}
 
 	/**

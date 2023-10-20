@@ -36,21 +36,33 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * POJO that represents the content of a response from the ANTS API when
+ * deleting an ANTS appointment from their database
+ *
+ */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class AntsDeleteAppointmentResponsePOJO {
 
+	/**
+	 * The amount of elements (rows) deleted from the ANTS database
+	 */
 	@JsonProperty( "rowcount" )
 	private int rowcount;
 
 	/**
-	 * @return the rowcount
+	 * Get the amount of elements (rows) deleted from the ANTS database
+	 * 
+	 * @return
+	 * 				The amount of elements deleted (0 == no elements deleted)
 	 */
 	public int getRowcount() {
 		return rowcount;
 	}
 
 	/**
-	 * @param rowcount the rowcount to set
+	 * @param rowcount
+	 * 				The rowcount to set
 	 */
 	public void setRowcount(int rowcount) {
 		this.rowcount = rowcount;

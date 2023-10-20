@@ -126,6 +126,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	private static final String APPLICATION_NUMBERS_SEPARATOR =
 			AppPropertiesService.getProperty( "ants.api.application.numbers.separator" );
 
+	/**
+	 * Variables used to save / retrieve specific details of an appointment
+	 */
 	public static final String KEY_URL = "url";
 	public static final String KEY_LOCATION = "location";
 	public static final String KEY_DATE = "date";
@@ -136,6 +139,15 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 	/**
 	 * Create an appointment in the ANTS database
+	 * 
+	 * @param request
+	 * 				request to use
+	 * @param idAppointment
+	 * 				ID of the appointment that will be processed
+	 * @param idTask
+	 * 				ID of the workflow task calling this method
+	 * @return
+	 * 				true if it was successfully created, returns false if it failed
 	 */
 	@Override
 	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
@@ -199,6 +211,15 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 	/**
 	 * Remove an appointment from the ANTS database
+	 * 
+	 * @param request
+	 * 				request to use
+	 * @param idAppointment
+	 * 				ID of the appointment that will be processed
+	 * @param idTask
+	 * 				ID of the workflow task calling this method
+	 * @return
+	 * 				true if it was successfully deleted, returns false if it failed
 	 */
 	@Override
 	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
@@ -262,8 +283,11 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 	/**
 	 * Check if an appointment was created from the front office or from the back office
-	 * @param appointment the appointment to check
-	 * @return true if it was created by a user in the front office, returns false otherwise
+	 * 
+	 * @param appointment
+	 * 				The appointment to check
+	 * @return
+	 * 				true if it was created by a user in the front office, returns false otherwise
 	 */
 	public static boolean isAppointmentCreatedInFrontOffice( Appointment appointment )
 	{
@@ -277,6 +301,21 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	/**
 	 * Build the URL used to add an appointment in the ANTS DB
 	 * 
+	 * @param baseUrl
+	 * 				The base URL of the ANTS API
+	 * @param addAppointmentUrl
+	 * 				The ANTS API's endpoint used to add appointments
+	 * @param applicationId
+	 * 				The ANTS application number used to create the appointment
+	 * @param managementUrl
+	 * 				The URL used to access the appointment's web page
+	 * @param meetingPoint
+	 * 				The location of the appointment
+	 * @param dateTime
+	 * 				The date and time of the appointment
+	 * @return
+	 * 				The complete URL used to create this specific appointment in
+	 * 				the ANTS database
 	 */
 	public static String buildAntsAddAppointmentUrl( String baseUrl, String addAppointmentUrl, String applicationId,
 			String managementUrl, String meetingPoint, String dateTime )
@@ -293,6 +332,16 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return urlItem.getUrl( );
 	}
 
+	/**
+	 * Use the ANTS API to add an appointment to their database
+	 * 
+	 * @param antsUrl
+	 * 				URL used to make the REST call
+	 * @return
+	 * 				true if the appointment was added successfully, returns false otherwise
+	 * @throws HttpAccessException
+	 * @throws IOException
+	 */
 	public static boolean addAntsAppointmentRestCall( String antsUrl ) throws HttpAccessException, IOException
 	{
 		String response = TaskAntsAppointmentRest.addAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
@@ -303,6 +352,20 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	/**
 	 * Build the URL used to delete an appointment from the ANTS DB
 	 * 
+	 * @param baseUrl
+	 * 				The base URL of the ANTS API
+	 * @param deleteAppointmentUrl
+	 * 				The ANTS API's endpoint used to delete an appointment
+	 * @param applicationId
+	 * 				The ANTS application number used to identify the
+	 * 				appointment to delete
+	 * @param meetingPoint
+	 * 				The location of the appointment
+	 * @param dateTime
+	 * 				The date and time of the appointment
+	 * @return
+	 * 				The complete URL used to delete this specific appointment
+	 * 				from the ANTS database
 	 */
 	public static String buildAntsDeleteAppointmentUrl( String baseUrl, String deleteAppointmentUrl, String applicationId,
 			String meetingPoint, String dateTime )
@@ -318,6 +381,16 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return urlItem.getUrl( );
 	}
 
+	/**
+	 * Use the ANTS API to delete an appointment from their database
+	 * 
+	 * @param antsUrl
+	 * 				URL used to make the REST call
+	 * @return
+	 * 				true if the appointment was deleted successfully, returns false otherwise
+	 * @throws HttpAccessException
+	 * @throws IOException
+	 */
 	public static boolean deleteAntsAppointmentRestCall( String antsUrl ) throws HttpAccessException, IOException
 	{
 		String response = TaskAntsAppointmentRest.deleteAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
@@ -327,7 +400,14 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 	/**
 	 * Retrieve the details of the current appointment (user name, email, date, etc.)
-	 * @return a <Key, Value> list of the current appointment's URL, location and date
+	 * 
+	 * @param request
+	 * 				The request from the current context
+	 * @param idAppointment
+	 * 				The ID of the appointment to process
+	 * @return
+	 * 				A <Key, Value> list of the current appointment's URL,
+	 * 				location and date
 	 */
 	public static Map<String, String> getAppointmentData( HttpServletRequest request, int idAppointment )
 	{
@@ -372,10 +452,14 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * Build a list of Objects containing the status of every application numbers given as parameter
-	 * @param applicationNumberList list of the application numbers for which the status will be retrieved 
-	 * @return a list of Objects representing the status of the application numbers, returns an empty List if
-	 * no element was found
+	 * Get the status of every ANTS application numbers given as parameter
+	 * 
+	 * @param applicationNumberList
+	 * 				List of the application numbers for which the status
+	 * 				will be retrieved
+	 * @return
+	 * 				A list of Objects representing the status of the given ANTS
+	 * 				application	numbers, returns an empty List if no element was found
 	 */
 	public static List<AntsStatusResponsePOJO> getAntsStatusResponseAsObjects( List<String> applicationNumberList ) 
 	{
@@ -397,6 +481,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			AppLogService.error( BEAN_SERVICE, e );
 		}
 
+		// If the HTTP call was made and returned a response
 		if( StringUtils.isNotBlank( response ) )
 		{
 			try
@@ -414,14 +499,21 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	/**
 	 * Build the URL used to get the status of specific ANTS appointments
 	 * 
+	 * @param applicationIdsList
+	 * 				The List of ANTS application numbers to use
+	 * @return
+	 * 				The complete URL used to check the status of appointments
+	 * 				from the ANTS database
 	 */
 	public static String buildAntsGetStatusAppointmentUrl( List<String> applicationIdsList )
 	{
+		// Build the base ANTS API URL used to retrieve the status of appointments
 		StringBuilder antsApisUrl = new StringBuilder(
 				ANTS_BASE_URL ).append( ANTS_STATUS_URL );
 
 		UrlItem urlItem = new UrlItem( antsApisUrl.toString( ) );
 
+		// Add every ANTS application number to the URL's parameters
 		for( String applicationId : applicationIdsList )
 		{
 			urlItem.addParameter( URL_PARAMETER_APPLICATION_IDS, applicationId );
@@ -430,8 +522,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * Check if the status of the given application numbers is valid and allows to add new appointments ('validated' status
-	 * and empty list of appointments)
+	 * Check if the status of the given application numbers are valid and allow to add
+	 * new appointments ('validated' status and empty list of appointments)
+	 * 
+	 * @param applicationNumberList
+	 * 				List of ANTS application numbers to check for validity
+	 * @return
+	 * 				true if all the application numbers are valid, false otherwise
 	 */
 	public static boolean isApplicationNumberListValidForCreation( List<String> applicationNumberList ) 
 	{
@@ -458,8 +555,14 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * Check if the status of the given application numbers is valid and allows to delete an existing
-	 * appointments ('validated' status and at least 1 element in its appointments list)
+	 * Check if the status of the given application numbers are valid and allow to delete
+	 * existing appointments ('validated' status and at least 1 element in their list of appointment)
+	 * 
+	 * @param applicationNumberList
+	 * 				List of ANTS application numbers to check for potential deletion
+	 * @return
+	 * 				true if the appointments with the given application numbers can be deleted,
+	 * 				false otherwise
 	 */
 	public static boolean isApplicationNumberListValidForDeletion( List<String> applicationNumberList ) 
 	{
@@ -489,6 +592,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 * Creates a List of {@link AntsStatusResponsePOJO} Objects from a json String containing the status
 	 * and appointments list that were returned by the ANTS API
 	 * 
+	 * @param response
+	 * 				The content of the HTTP response returned by the ANTS API after getting the status of 
+	 * 				one or more ANTS application number(s)
+	 * @return
+	 * 				A List of AntsStatusResponsePOJO Objects. Each item represents the status of one ANTS
+	 * 				application number
+	 * @throws IOException
 	 */
 	public static List<AntsStatusResponsePOJO> getStatusResponseAsObject( String response ) throws IOException
 	{
@@ -513,7 +623,12 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * Properly encode a String containing a URL to make sure it has the proper format
+	 * Properly encode a String containing a URL to make sure it has the proper format (special characters encoding...)
+	 * 
+	 * @param urlToClean
+	 * 				The URL to process
+	 * @return
+	 * 				A URL with encoded characters. Returns the initial URL if an error occurred
 	 */
 	public static String cleanUrl( String urlToClean )
 	{
@@ -529,33 +644,47 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * When creating an appointment with the ANTS API, check whether the http response
-	 * returned a successful result or not
-	 *
+	 * Check whether an HTTP response returned a successful result or not when
+	 * trying to create an appointment with the ANTS API
+	 * 
+	 * @param response
+	 * 				The content of the HTTP response returned by the ANTS API
+	 * @return
+	 * 				true if the appointment was created successfully, returns false otherwise
+	 * @throws IOException
 	 */
 	public static boolean isAppointmentCreationSuccessful( String response ) throws IOException
 	{
 		ObjectMapper mapper = new ObjectMapper( );
 
+		// Convert the content of the response into an Object
 		AntsAddAppointmentResponsePOJO responseObject =
 				mapper.readValue( response, AntsAddAppointmentResponsePOJO.class );
 
+		// Check the result from the Object
 		return responseObject.isSuccess( );
 	}
 
 	/**
-	 * When deleting an appointment with the ANTS API, check whether the http response
-	 * returned a positive result (number of appointments deleted > 0) or not (0)
-	 *
+	 * Check whether an HTTP response returned a positive result (number of appointments deleted > 0)
+	 * or not (0), when trying to delete an appointment with the ANTS API
+	 * 
+	 * @param response
+	 * 				The content of the HTTP response returned by the ANTS API
+	 * @return
+	 * 				true if the appointment was deleted successfully, returns false otherwise
+	 * @throws IOException
 	 */
 	public static boolean isAppointmentDeletionSuccessful( String response ) throws IOException
 	{
 		ObjectMapper mapper = new ObjectMapper( );
 
+		// Convert the content of the response into an Object
 		AntsDeleteAppointmentResponsePOJO responseObject =
 				mapper.readValue( response, AntsDeleteAppointmentResponsePOJO.class );
 
 		/**
+		 * Check the Object:
 		 * If rowcount == 0, then no appointment was deleted
 		 * If it is > 0, then 1 or more appointments were successfully deleted
 		 */
@@ -564,9 +693,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 	/**
 	 * Get the list of application numbers tied to an appointment
-	 * @param idAppointment ID of the appointment
-	 * @param entryFieldId ID of the Entry used to save ANTS application numbers
-	 * @return a List of application numbers as strings
+	 * 
+	 * @param idAppointment
+	 * 				ID of the appointment
+	 * @param entryFieldId
+	 * 				ID of the Entry used to save ANTS application numbers
+	 * @return
+	 * 				A List of application numbers as strings
 	 */
 	public static List<String> getAntsApplicationValues( int idAppointment, int entryFieldId )
 	{
@@ -600,8 +733,12 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 	/**
 	 * Get the ID of the entry field where the ANTS application numbers of an appointment are saved
-	 * @param idTask ID of the task being executed
-	 * @return the ID of the entry field
+	 * 
+	 * @param idTask
+	 * 				ID of the task being executed
+	 * 
+	 * @return
+	 * 				The ID of the entry field
 	 */
 	@Override
 	public int getAntsApplicationFieldId( int idTask )

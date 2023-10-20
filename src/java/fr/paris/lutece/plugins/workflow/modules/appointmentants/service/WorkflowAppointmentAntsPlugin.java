@@ -37,6 +37,10 @@ import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginDefaultImplementation;
 import fr.paris.lutece.portal.service.plugin.PluginService;
 
+/**
+ * Plugin Workflow for the ANTS
+ *
+ */
 public class WorkflowAppointmentAntsPlugin extends PluginDefaultImplementation
 {
 
@@ -45,6 +49,9 @@ public class WorkflowAppointmentAntsPlugin extends PluginDefaultImplementation
      */
     public static final String PLUGIN_NAME = "workflow-appointmentants";
     
+    /**
+     * Name of the Configuration Service used for the workflow
+     */
     public static final String BEAN_CONFIG = PLUGIN_NAME + ".taskAntsAppointmentConfigService";
 
     /**

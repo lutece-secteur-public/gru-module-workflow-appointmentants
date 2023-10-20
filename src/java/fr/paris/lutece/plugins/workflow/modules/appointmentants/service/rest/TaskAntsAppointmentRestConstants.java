@@ -35,6 +35,11 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest;
 
 import java.time.format.DateTimeFormatter;
 
+/**
+ * Constant values used to retrieve the appropriate resources used
+ * to make the REST calls throughout the plugin
+ *
+ */
 public class TaskAntsAppointmentRestConstants {
 	
 	// PATHS

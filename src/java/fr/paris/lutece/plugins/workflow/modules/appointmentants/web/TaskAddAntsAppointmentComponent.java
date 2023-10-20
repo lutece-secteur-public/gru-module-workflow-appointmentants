@@ -65,7 +65,7 @@ public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointment
 	{
 		String taskTitle = I18nService.getLocalizedString( PROPERTY_TASK_TITLE, locale );
 		
-		return getDisplayConfigForm( taskTitle, locale, task, _config );
+		return getDisplayConfigForm( request, taskTitle, locale, task, _config );
 	}
 
 	/**

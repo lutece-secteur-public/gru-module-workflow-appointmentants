@@ -77,10 +77,13 @@ public class TaskAddAntsAppointment extends SimpleTask
 	 */
 	private static final String PROPERTY_LABEL_TITLE = "module.workflow.appointmentants.add_appointment.task_title";
 
+	/**
+     * {@inheritDoc}
+     */
 	@Override
 	public boolean processTaskWithResult( int nIdResourceHistory, HttpServletRequest request, Locale locale, User user )
 	{
-		// Get the resourceHistory to find the resource to work with
+		// Get the resourceHistory to find the resource (i.e the appointment) to work with
 		ResourceHistory resourceHistory = _resourceHistoryService.findByPrimaryKey( nIdResourceHistory );
 
 		try
@@ -94,12 +97,18 @@ public class TaskAddAntsAppointment extends SimpleTask
 		}
 	}
 
+	/**
+     * {@inheritDoc}
+     */
 	@Override
 	public String getTitle( Locale locale )
 	{
 		return I18nService.getLocalizedString( PROPERTY_LABEL_TITLE, locale );
 	}
 
+	/**
+     * {@inheritDoc}
+     */
 	@Override
 	public void doRemoveConfig( )
 	{

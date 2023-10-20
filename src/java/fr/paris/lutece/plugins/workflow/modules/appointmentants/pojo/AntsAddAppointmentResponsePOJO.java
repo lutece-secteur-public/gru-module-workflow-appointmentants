@@ -36,9 +36,17 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * POJO that represents the content of a response from the ANTS API when
+ * adding an appointment in the ANTS database
+ *
+ */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public class AntsAddAppointmentResponsePOJO {
 
+	/**
+	 * Whether the appointment was added successfully or failed
+	 */
 	@JsonProperty( "success" )
 	private boolean success;
 

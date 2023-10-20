@@ -35,10 +35,23 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
 
 import fr.paris.lutece.plugins.workflowcore.business.config.TaskConfig;
 
+/**
+ * Class that represents the configuration of an ANTS Workflow task.
+ * Used to save the ID of the form used in the configuration and the
+ * entry of that form used to retrieve ANTS' application numbers
+ * 
+ */
 public class TaskAntsAppointmentConfig extends TaskConfig {
 	
+	/**
+	 * ID of the form tied to this configuration
+	 */
 	private int _nIdForm;
 
+	/**
+	 * ID of the specific entry field used to save ANTS application
+	 * numbers in the form
+	 */
 	private int _nIdFieldEntry;
 
 	public int getIdForm( )

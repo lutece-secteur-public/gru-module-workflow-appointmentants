@@ -51,6 +51,18 @@ public class TaskAntsAppointmentRest {
 	{
 	}
 	
+	/**
+	 * Add an appointment to the ANTS database through their API, by using
+	 * a POST method
+	 * 
+	 * @param addAppointmentUrl
+	 * 				The URL used to make the REST call
+	 * @param token
+	 * 				The API key to use in the REST call
+	 * @return
+	 * 				The content of the call's response
+	 * @throws HttpAccessException
+	 */
 	public static String addAntsAppointment( String addAppointmentUrl, String token )
 			throws HttpAccessException
 	{		
@@ -62,6 +74,18 @@ public class TaskAntsAppointmentRest {
         return httpAccess.doPost( addAppointmentUrl, null, null, null, headersRequest );
 	}
 	
+	/**
+	 * Delete an appointment from the ANTS database with their API, by using
+	 * a DELETE method
+	 * 
+	 * @param deleteAppointmentUrl
+	 * 				The URL used to make the REST call
+	 * @param token
+	 * 				The API key to use in the REST call
+	 * @return
+	 * 				The content of the call's response
+	 * @throws HttpAccessException
+	 */
 	public static String deleteAntsAppointment( String deleteAppointmentUrl, String token )
 			throws HttpAccessException
 	{		
@@ -73,6 +97,18 @@ public class TaskAntsAppointmentRest {
         return httpAccess.doDelete( deleteAppointmentUrl, null, null, headersRequest, null );
 	}
 	
+	/**
+	 * Get the status of 1 or more appointments from the ANTS database
+	 * through their API, by using a GET method
+	 * 
+	 * @param getStatusUrl
+	 * 				The URL used to make the REST call
+	 * @param token
+	 * 				The API key to use in the REST call
+	 * @return
+	 * 				The content of the call's response
+	 * @throws HttpAccessException
+	 */
 	public static String getAntsAppointmentStatus( String getStatusUrl, String token ) 
 			throws HttpAccessException
 	{

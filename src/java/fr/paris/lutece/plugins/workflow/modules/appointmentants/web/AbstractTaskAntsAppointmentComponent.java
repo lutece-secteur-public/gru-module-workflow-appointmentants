@@ -75,42 +75,46 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 	private static final String PARAMETER_SELECT_FORM_ID = "id_form_selection";
 	public static final String PARAMETER_SELECT_FIELD_ENTRY_TITLE = "id_form_field_entry_selection";
 	public static final String PARAMETER_SELECT_FORM = "selectForm";
-	private static final String JSP_MODIFY_TASK = "jsp/admin/plugins/workflow/ModifyTask.jsp";
 	private static final String PARAMETER_ID_TASK = "id_task";
-	
+	private static final String PARAMETER_ID_FORM = "id_form";
+
 	// TEMPLATES
 	private static final String TEMPLATE_TASK_ANTS_APPOINTMENT_CONFIG = "admin/plugins/workflow/modules/appointmentants/task_ants_appointment_config.html";
 
-    private int _nIdForm = -1;
+	// JSPs
+	private static final String JSP_MODIFY_TASK = "jsp/admin/plugins/workflow/ModifyTask.jsp";
 
-    /**
-     * Display the configuration page for the current task
-     * 
-     * @param taskTitle title of the task
-     * @param locale language used
-     * @param task the task to configure
-     * @param configService service used for the task configuration
-     * @return a String containing the HTML page of the task configuration 
-     */
-	public String getDisplayConfigForm( String taskTitle, Locale locale, ITask task, ITaskConfigService configService )
+	/**
+	 * Build and display the configuration page for the current task
+	 * 
+	 * @param taskTitle
+	 * 				Title of the task
+	 * @param locale
+	 * 				Language used
+	 * @param task
+	 * 				The task to configure
+	 * @param configService
+	 * 				Service used for the task configuration
+	 * @return
+	 * 				A String containing the HTML page of the task configuration 
+	 */
+	public String getDisplayConfigForm( HttpServletRequest request, String taskTitle, Locale locale, ITask task, ITaskConfigService configService )
 	{
+		// Retrieve the task's config
 		TaskAntsAppointmentConfig config = configService.findByPrimaryKey( task.getId( ) );
 
-		Map<String, Object> model = new HashMap<>( );
-
-		// Set the proper id to the IdForm
-		if( _nIdForm == 0 && config != null && config.getIdForm( ) != 0 )
-		{
-			_nIdForm = config.getIdForm( );
-		}
+		// Get the selected form's ID for this task
+		int idForm = getCurrentFormId( request, config );
 
 		// Get the list of existing forms		
 		ReferenceList formsList = FormService.findAllInReferenceList( );
 		// Get the list of entries for the given form. Empty if no form as been selected yet
-		ReferenceList entriesList = getFieldsList( _nIdForm );
-		
+		ReferenceList entriesList = getFieldsList( idForm );
+
+		Map<String, Object> model = new HashMap<>( );
+
 		model.put( MARK_TASK_TITLE, taskTitle );
-		model.put( MARK_FORM_ID, _nIdForm );
+		model.put( MARK_FORM_ID, idForm );
 		model.put( MARK_CONFIG, config );
 		model.put( MARK_FORMS_LIST, formsList );
 		model.put( MARK_FORM_FIELDS_LIST, entriesList );
@@ -123,31 +127,34 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 	/**
 	 * Save the configuration of this task
 	 * 
-	 * @param request HTTP request
-	 * @param task the task getting its configuration set
-	 * @param configService the service in charge of handling the configuration
-	 * @return the url to reach after the task configuration is done
+	 * @param request
+	 * 				HTTP request
+	 * @param task
+	 * 				The task getting its configuration set
+	 * @param configService
+	 * 				The service in charge of handling the configuration
+	 * @return
+	 * 				The URL to reach after the task configuration is done
 	 */
 	public String doSaveConfig( HttpServletRequest request, ITask task, ITaskConfigService configService )
 	{
 		// Retrieve the values of the selected form and its entry 
 		String paramFormId = request.getParameter( PARAMETER_SELECT_FORM_ID );
 		String paramFieldEntryId = request.getParameter( PARAMETER_SELECT_FIELD_ENTRY_TITLE );
-		
+
 		String paramActionSelect = request.getParameter( PARAMETER_SELECT_FORM );
 
-		_nIdForm = 0;
-				
 		// If a new form has been selected and the selection button has been clicked to apply the changes
 		if( StringUtils.equals( paramActionSelect, PARAMETER_SELECT_FORM ) &&
 				( Integer.parseInt( paramFormId ) != WorkflowUtils.CONSTANT_ID_NULL ) )
 		{
-			_nIdForm = Integer.parseInt( paramFormId );
-			return getUrlToTaskModificationPage( request, task.getId( ) );
+			int formId = Integer.parseInt( paramFormId );
+			// Reload the page with the new data (form's ID)
+			return getUrlToTaskModificationPage( request, task.getId( ), formId );
 		}
-		
+
 		TaskAntsAppointmentConfig config = configService.findByPrimaryKey( task.getId( ) );
-		
+
 		/* If we are using an existing config, then this will remain false. It will be 
 		 * set to true if a new config is being created */
 		boolean bCreate = false;
@@ -165,10 +172,10 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 		{
 			config.setIdFieldEntry( NumberUtils.toInt( paramFieldEntryId ) );
 		}
-		
+
 		// Set the selected form in the config
 		config.setIdForm( NumberUtils.toInt( paramFormId ) );
-		
+
 		// If the config is new, then create it in DB
 		if ( bCreate )
 		{
@@ -181,17 +188,20 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Get a ReferenceList containing all the entries of the specified form. Each item of the ReferenceList
 	 * will contain the title value of the entries
 	 * 
-	 * @param idForm Id of the form to process
-	 * @return a ReferenceList Object with all the entries available in the form, or an empty ReferenceList
-	 * if the form has no entry
+	 * @param idForm
+	 * 				ID of the form to process
+	 * @return
+	 * 				A ReferenceList Object with all the entries available in the form, or an empty ReferenceList
+	 * 				if the form has no entry
 	 */
 	private ReferenceList getFieldsList( int idForm )
 	{
+		// If the ID is not -1, then retrieve the entries of the corresponding form
 		if( idForm != -1 )
 		{
 			List<Entry> entriesList = EntryService.findListEntry( idForm );
@@ -216,26 +226,66 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 	}
 
 	/**
-	 * Build and return the URL to modify a task
+	 * Build and return the URL to modify a task (reloads the page)
 	 * 
-	 * @param request the HTTP request
-	 * @param idTask the ID of the task whose configuration is getting modified
-	 * @return the URL
+	 * @param request
+	 * 				The HTTP request
+	 * @param idTask
+	 * 				The ID of the task whose configuration is getting modified
+	 * @param idForm
+	 * 				ID of the form selected by the user
+	 * @return
+	 * 				The URL of this config's modification page
 	 */
-	private String getUrlToTaskModificationPage( HttpServletRequest request, int idTask )
+	private String getUrlToTaskModificationPage( HttpServletRequest request, int idTask, int idForm )
 	{
 		StringBuilder redirectUrl = new StringBuilder( AppPathService.getBaseUrl( request ) );
 		redirectUrl.append( JSP_MODIFY_TASK );
-		
+
 		UrlItem url = new UrlItem( redirectUrl.toString( ) );
 		url.addParameter( PARAMETER_ID_TASK, idTask );
+		url.addParameter( PARAMETER_ID_FORM, idForm );
 
 		return url.getUrl( );
 	}
-	
+
 	/**
-     * {@inheritDoc}
-     */
+	 * Get the ID of the form currently selected
+	 * 
+	 * @param request
+	 * 				The current HTTP request
+	 * @param config
+	 * 				The task's configuration
+	 * @return
+	 * 				The ID of the form saved in the config or selected by the user. Otherwise the default
+	 * 				value -1 is returned
+	 */
+	private int getCurrentFormId( HttpServletRequest request, TaskAntsAppointmentConfig config )
+	{
+		// Get the form's ID from the URL's parameters if the user previously selected it
+		String strIdForm = request.getParameter( PARAMETER_ID_FORM );
+
+		if( StringUtils.isNumeric( strIdForm ) )
+		{
+			// Return the selected form's ID
+			return Integer.parseInt( strIdForm );
+		}
+
+		// If the config exists, then get its current selected form ID
+		if( config != null && config.getIdForm( ) != 0 )
+		{
+			return config.getIdForm( );
+		}
+
+		/* If there are no config and the user didn't select a form yet, then we consider
+		 * that this page is loaded for the first time, so we set the default values
+		 * */
+		return -1;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getDisplayTaskInformation(int nIdHistory, HttpServletRequest request, Locale locale, ITask task )
 	{
@@ -243,8 +293,8 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 	}
 
 	/**
-     * {@inheritDoc}
-     */
+	 * {@inheritDoc}
+	 */
 	@Override
 	public String getDisplayConfigForm( HttpServletRequest request, Locale locale, ITask task )
 	{

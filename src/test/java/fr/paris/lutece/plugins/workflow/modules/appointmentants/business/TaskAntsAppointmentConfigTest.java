@@ -1,8 +1,12 @@
     package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
 
-    import junit.framework.TestCase;
+    import fr.paris.lutece.test.LuteceTestCase;
 
-    public class TaskAntsAppointmentConfigTest extends TestCase {
+    public class TaskAntsAppointmentConfigTest extends LuteceTestCase {
+
+        public void setUp() {
+        }
+
         public void testTaskAntsAppointmentConfig() {
             TaskAntsAppointmentConfig config = new TaskAntsAppointmentConfig();
 

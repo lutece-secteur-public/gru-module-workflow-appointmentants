@@ -1,18 +1,19 @@
-    package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
+package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
 
-    import junit.framework.TestCase;
 
-    public class TaskAntsAppointmentConfigTest extends TestCase {
-        public void testTaskAntsAppointmentConfig() {
-            TaskAntsAppointmentConfig config = new TaskAntsAppointmentConfig();
+import fr.paris.lutece.test.LuteceTestCase;
 
-            int formId = 1;
-            int fieldEntryId = 2;
+public class TaskAntsAppointmentConfigTest extends LuteceTestCase {
+    public void testTaskAntsAppointmentConfig() {
+        TaskAntsAppointmentConfig config = new TaskAntsAppointmentConfig();
 
-            config.setIdForm(formId);
-            config.setIdFieldEntry(fieldEntryId);
+        int formId = 1;
+        int fieldEntryId = 2;
 
-            assertEquals(formId, config.getIdForm());
-            assertEquals(fieldEntryId, config.getIdFieldEntry());
-        }
+        config.setIdForm(formId);
+        config.setIdFieldEntry(fieldEntryId);
+
+        assertEquals(formId, config.getIdForm());
+        assertEquals(fieldEntryId, config.getIdFieldEntry());
     }
+}

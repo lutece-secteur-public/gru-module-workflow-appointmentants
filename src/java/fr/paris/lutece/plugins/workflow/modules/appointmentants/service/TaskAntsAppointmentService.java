@@ -58,6 +58,7 @@ import fr.paris.lutece.plugins.appointment.business.appointment.Appointment;
 import fr.paris.lutece.plugins.appointment.business.localization.Localization;
 import fr.paris.lutece.plugins.appointment.service.AppointmentResponseService;
 import fr.paris.lutece.plugins.appointment.service.AppointmentService;
+import fr.paris.lutece.plugins.appointment.service.AppointmentUtilities;
 import fr.paris.lutece.plugins.appointment.service.LocalizationService;
 import fr.paris.lutece.plugins.appointment.web.AppointmentApp;
 import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
@@ -152,7 +153,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	@Override
 	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
 	{
-		Map<String, String> applicationContent = getAppointmentData( request, idAppointment );
+		Map<String, String> applicationContent = getAppointmentData( request, idAppointment, false );
 
 		boolean isAppointmentCreated = false;
 
@@ -224,7 +225,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	@Override
 	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
 	{
-		Map<String, String> applicationContent = getAppointmentData( request, idAppointment );
+		Map<String, String> applicationContent = getAppointmentData( request, idAppointment, true );
 
 		boolean isAppointmentDeleted = false;
 
@@ -405,15 +406,34 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 * 				The request from the current context
 	 * @param idAppointment
 	 * 				The ID of the appointment to process
+	 * @param isDeletingAntsAppointment
+	 * 				Whether the appointment is getting deleted (true) or if it is being created (false)
 	 * @return
 	 * 				A <Key, Value> list of the current appointment's URL,
 	 * 				location and date
 	 */
-	public static Map<String, String> getAppointmentData( HttpServletRequest request, int idAppointment )
+	public static Map<String, String> getAppointmentData( HttpServletRequest request, int idAppointment, boolean isDeletingAppointment )
 	{
 		Map<String, String> appointmentDataMap = new HashMap<>( );
+		AppointmentDTO appointmentDto = null;
 
-		AppointmentDTO appointmentDto = AppointmentService.buildAppointmentDTOFromIdAppointment( idAppointment );
+		// Check if the current appointment is being deleted
+		if( isDeletingAppointment )
+		{
+			// Get the appointement's previous data, in case it is being rescheduled
+			appointmentDto = getOldAppointment( request );
+
+			if( appointmentDto == null )
+			{
+				// The appointment isn't being rescheduled, so we retrieve its current data
+				appointmentDto = AppointmentService.buildAppointmentDTOFromIdAppointment( idAppointment );
+			}
+		}
+		else
+		{
+			// The appointment is being created, so we retrieve its data
+			appointmentDto = AppointmentService.buildAppointmentDTOFromIdAppointment( idAppointment );
+		}
 
 		// Get the appointment's URL and encode it
 		appointmentDataMap.put(
@@ -449,6 +469,32 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				appointmentDateTime );
 
 		return appointmentDataMap;
+	}
+
+	/**
+	 * Get the AppointmentDTO containing the previous data of an appointment. It is retrieved
+	 * from the request's attributes
+	 * 
+	 * @param request
+	 * 				The request containing the AppointmentDTO in its attributes
+	 * @return
+	 * 				The AppointmentDTO Object containing the previous data if it was found,
+	 * 				returns null otherwise
+	 */
+	private static AppointmentDTO getOldAppointment( HttpServletRequest request )
+	{
+		AppointmentDTO oldAppointment = null;
+
+		try
+		{
+			// Retrieve the previous appointment from the request's parameters
+			oldAppointment = ( AppointmentDTO ) request.getAttribute( AppointmentUtilities.OLD_APPOINTMENT_DTO );
+		}
+		catch ( Exception e )
+		{
+			AppLogService.info( BEAN_SERVICE + " removing appointment from ants database: {}", e.getMessage( ) );
+		}
+		return oldAppointment;
 	}
 
 	/**

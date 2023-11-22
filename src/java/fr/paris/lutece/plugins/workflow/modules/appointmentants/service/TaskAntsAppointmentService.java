@@ -127,6 +127,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	private static final String APPLICATION_NUMBERS_SEPARATOR =
 			AppPropertiesService.getProperty( "ants.api.application.numbers.separator" );
 
+	private static final String PARIS_USER_ACCOUNT_URL =
+			AppPropertiesService.getProperty( "paris.user.account.url" );
+
 	/**
 	 * Variables used to save / retrieve specific details of an appointment
 	 */
@@ -435,10 +438,10 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			appointmentDto = AppointmentService.buildAppointmentDTOFromIdAppointment( idAppointment );
 		}
 
-		// Get the appointment's URL and encode it
+		// Get the URL of the user's account on PARIS' web site, and encode it
 		appointmentDataMap.put(
 				KEY_URL,
-				cleanUrl( AppointmentApp.getCancelAppointmentUrl( request, appointmentDto ) ) );
+				cleanUrl( PARIS_USER_ACCOUNT_URL ) );
 
 		// Get the appointment's location
 		String appointmentLocation = "";

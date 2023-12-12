@@ -33,6 +33,8 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo;
 
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -45,6 +47,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class AntsStatusResponsePOJO {
 
 	/**
+	 * Value of the ANTS application number
+	 */
+	private String strAntsApplicationValue;
+
+	/**
 	 * Status of the appointment (validated, unknown...)
 	 */
 	@JsonProperty( "status" )
@@ -54,16 +61,26 @@ public class AntsStatusResponsePOJO {
 	 * List of all the appointments tied to the specified application number
 	 */
 	@JsonProperty( "appointments" )
-	private Object[] appointments;
+	private List<AntsAppointmentContent> appointments;
+
+	public String getAntsApplicationValue( )
+	{
+		return strAntsApplicationValue;
+	}
 
 	public String getStatus( )
 	{
 		return status;
 	}
 
-	public Object[] getAppointments( )
+	public List<AntsAppointmentContent> getAppointments( )
 	{
 		return appointments;
+	}
+
+	public void setAntsApplicationValue( String antsApplicationValue )
+	{
+		this.strAntsApplicationValue = antsApplicationValue;
 	}
 
 	public void setStatus( String status )
@@ -71,8 +88,64 @@ public class AntsStatusResponsePOJO {
 		this.status = status;
 	}
 
-	public void setAppointments( Object[] appointments )
+	public void setAppointments( List<AntsAppointmentContent> appointments )
 	{
 		this.appointments = appointments;
+	}
+
+	@JsonIgnoreProperties( ignoreUnknown = true )
+	public static class AntsAppointmentContent
+	{
+		@JsonProperty( "meeting_point" )
+		private String meetingPoint;
+
+		@JsonProperty( "appointment_date" )
+		private String appointmentDate;
+
+		@JsonProperty( "management_url" )
+		private String managementUrl;
+
+		@JsonProperty( "editor_comment" )
+		private String editorComment;
+
+		public String getMeetingPoint( )
+		{
+			return meetingPoint;
+		}
+
+		public void setMeetingPoint( String meetingPoint )
+		{
+			this.meetingPoint = meetingPoint;
+		}
+
+		public String getAppointmentDate( )
+		{
+			return appointmentDate;
+		}
+
+		public void setAppointmentDate( String appointmentDate )
+		{
+			this.appointmentDate = appointmentDate;
+		}
+
+		public String getManagementUrl( )
+		{
+			return managementUrl;
+		}
+
+		public void setManagementUrl( String managementUrl )
+		{
+			this.managementUrl = managementUrl;
+		}
+
+		public String getEditorComment( )
+		{
+			return editorComment;
+		}
+
+		public void setEditorComment( String editorComment )
+		{
+			this.editorComment = editorComment;
+		}
 	}
 }

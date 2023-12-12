@@ -33,9 +33,12 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.exception.AntsException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -60,13 +63,13 @@ import fr.paris.lutece.plugins.appointment.service.AppointmentResponseService;
 import fr.paris.lutece.plugins.appointment.service.AppointmentService;
 import fr.paris.lutece.plugins.appointment.service.AppointmentUtilities;
 import fr.paris.lutece.plugins.appointment.service.LocalizationService;
-import fr.paris.lutece.plugins.appointment.web.AppointmentApp;
 import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
 import fr.paris.lutece.plugins.genericattributes.business.Response;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsAddAppointmentResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsDeleteAppointmentResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO.AntsAppointmentContent;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRest;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRestConstants;
 import fr.paris.lutece.portal.service.util.AppLogService;
@@ -168,20 +171,21 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		// If the appointment has no application number(s), then stop the task
 		if( CollectionUtils.isEmpty( applicationNumberList ) )
 		{
+			AppLogService.info( "{} appointment with ID {} has no ANTS number", BEAN_SERVICE, idAppointment );
 			// We return true, so the task stops with a positive result
 			return true;
 		}
 
 		// Check if the application number used are valid and allow appointments creation
-		if( isApplicationNumberListValidForCreation( applicationNumberList ) ) {
+		if( isApplicationNumberListValidForCreation( idAppointment, applicationNumberList ) ) {
 
 			// For each application number available, create a new ANTS appointment
 			for( String appplicationNumber : applicationNumberList ) {
 
 				// Build the ANTS URL used to create a new appointment
 				String antsURL = buildAntsAddAppointmentUrl(
-						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
-						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_ADD_APPOINTMENT),
+						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL ),
+						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_ADD_APPOINTMENT ),
 						appplicationNumber,
 						applicationContent.get( KEY_URL ),
 						applicationContent.get( KEY_LOCATION ),
@@ -191,10 +195,12 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 					// Create the appointment on the ANTS database
 					isAppointmentCreated = addAntsAppointmentRestCall( antsURL );
 
+					// If an appointment couldn't be created, then send a negative result to the task
 					if( !isAppointmentCreated )
 					{
 						return isAppointmentCreated;
 					}
+					AppLogService.debug( "{} ANTS appointment created successfully for appointment with ID {}", BEAN_SERVICE, idAppointment );
 				}
 				catch ( HttpAccessException h )
 				{
@@ -241,46 +247,56 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		// If the appointment has no application number(s), then stop the task
 		if( CollectionUtils.isEmpty( applicationNumberList ) )
 		{
+			AppLogService.info( "{} appointment with ID {} has no ANTS number", BEAN_SERVICE, idAppointment );
 			// We return true, so the task stops with a positive result
 			return true;
 		}
 
-		// Check if the application numbers used are valid and still allow the appointments to be deleted
-		if( isApplicationNumberListValidForDeletion( applicationNumberList ) ) {
+		try
+		{
+			// Check if the application numbers used are valid and still allow the appointments to be deleted
+			if( isApplicationNumberListValidForDeletion( applicationContent, idAppointment, applicationNumberList ) ) {
 
-			// For each application number available, delete any existing ANTS appointment
-			for( String appplicationNumber : applicationNumberList ) {
+				// For each application number available, delete any existing ANTS appointment
+				for( String appplicationNumber : applicationNumberList ) {
 
-				// Build the ANTS URL used to delete an appointment
-				String antsURL = buildAntsDeleteAppointmentUrl(
-						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
-						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT),
-						appplicationNumber,
-						applicationContent.get( KEY_LOCATION ),
-						applicationContent.get( KEY_DATE )
-						);
-				try {
-					// Delete the appointment from the ANTS database
-					isAppointmentDeleted = deleteAntsAppointmentRestCall( antsURL );
+					// Build the ANTS URL used to delete an appointment
+					String antsURL = buildAntsDeleteAppointmentUrl(
+							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL ),
+							AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT ),
+							appplicationNumber,
+							applicationContent.get( KEY_LOCATION ),
+							applicationContent.get( KEY_DATE )
+							);
+					try {
+						// Delete the appointment from the ANTS database
+						isAppointmentDeleted = deleteAntsAppointmentRestCall( antsURL );
 
-					if( !isAppointmentDeleted )
+						// If the appointment couldn't be deleted, send a negative result to the task
+						if( !isAppointmentDeleted )
+						{
+							return isAppointmentDeleted;
+						}
+						AppLogService.debug( "{} ANTS appointment deleted successfully for appointment with ID: {}", BEAN_SERVICE, idAppointment );
+					}
+					catch ( HttpAccessException h )
 					{
-						return isAppointmentDeleted;
+						AppLogService.error( BEAN_SERVICE, h );
+					}
+					catch ( IOException i )
+					{
+						AppLogService.error( BEAN_SERVICE, i );
+					}
+					catch( Exception e )
+					{
+						AppLogService.error( BEAN_SERVICE, e );
 					}
 				}
-				catch ( HttpAccessException h )
-				{
-					AppLogService.error( BEAN_SERVICE, h );
-				}
-				catch ( IOException i )
-				{
-					AppLogService.error( BEAN_SERVICE, i );
-				}
-				catch( Exception e )
-				{
-					AppLogService.error( BEAN_SERVICE, e );
-				}
 			}
+		}
+		catch ( AntsException exception )
+		{
+			AppLogService.error( BEAN_SERVICE, exception );
 		}
 		return isAppointmentDeleted;
 	}
@@ -328,10 +344,10 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				append( addAppointmentUrl );
 
 		UrlItem urlItem = new UrlItem( antsApiUrl.toString( ) );
-		urlItem.addParameter(URL_PARAMETER_APPLICATION_ID, applicationId );
-		urlItem.addParameter(URL_PARAMETER_MANAGEMENT_URL, managementUrl );
-		urlItem.addParameter(URL_PARAMETER_MEETING_POINT, meetingPoint );
-		urlItem.addParameter(URL_PARAMETER_APPOINTMENT_DATE, dateTime );
+		urlItem.addParameter( URL_PARAMETER_APPLICATION_ID, applicationId );
+		urlItem.addParameter( URL_PARAMETER_MANAGEMENT_URL, managementUrl );
+		urlItem.addParameter( URL_PARAMETER_MEETING_POINT, meetingPoint );
+		urlItem.addParameter( URL_PARAMETER_APPOINTMENT_DATE, dateTime );
 
 		return urlItem.getUrl( );
 	}
@@ -378,9 +394,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				append( deleteAppointmentUrl );
 
 		UrlItem urlItem = new UrlItem( antsApiUrl.toString( ) );
-		urlItem.addParameter(URL_PARAMETER_APPLICATION_ID, applicationId );
-		urlItem.addParameter(URL_PARAMETER_MEETING_POINT, meetingPoint );
-		urlItem.addParameter(URL_PARAMETER_APPOINTMENT_DATE, dateTime );
+		urlItem.addParameter( URL_PARAMETER_APPLICATION_ID, applicationId );
+		urlItem.addParameter( URL_PARAMETER_MEETING_POINT, meetingPoint );
+		urlItem.addParameter( URL_PARAMETER_APPOINTMENT_DATE, dateTime );
 
 		return urlItem.getUrl( );
 	}
@@ -495,7 +511,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		catch ( Exception e )
 		{
-			AppLogService.info( BEAN_SERVICE + " removing appointment from ants database: {}", e.getMessage( ) );
+			AppLogService.info( "{} removing appointment from ants database: {}", BEAN_SERVICE, e.getMessage( ) );
 		}
 		return oldAppointment;
 	}
@@ -520,6 +536,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		try {
 			response = TaskAntsAppointmentRest.getAntsAppointmentStatus( getStatusUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
+			AppLogService.debug( "{} ANTS GET STATUS request successful - Response: {}", BEAN_SERVICE, response );
 		}
 		catch ( HttpAccessException h )
 		{
@@ -574,29 +591,40 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 * Check if the status of the given application numbers are valid and allow to add
 	 * new appointments ('validated' status and empty list of appointments)
 	 * 
+	 * @param idAppointment
+	 * 				ID of the appointment being processed
 	 * @param applicationNumberList
 	 * 				List of ANTS application numbers to check for validity
 	 * @return
 	 * 				true if all the application numbers are valid, false otherwise
 	 */
-	public static boolean isApplicationNumberListValidForCreation( List<String> applicationNumberList ) 
+	public static boolean isApplicationNumberListValidForCreation( int idAppointment, List<String> applicationNumberList )
 	{
 		List<AntsStatusResponsePOJO> statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
 
 		if( CollectionUtils.isEmpty( statusResponseList ) )
 		{
+			AppLogService.info( "{} no status retrieved for the ANTS numbers {}",
+					BEAN_SERVICE, Arrays.toString( applicationNumberList.toArray( ) ) );
 			return false;
 		}
 
 		// Check the validity of each application number's status and appointments
 		for( AntsStatusResponsePOJO statusResponse : statusResponseList )
 		{
+			String statusAntsNumber = statusResponse.getStatus( );
+			List<AntsAppointmentContent> listAntsNumberAppointments = statusResponse.getAppointments( );
+
 			/* If the application number hasn't been validated, or if it already has
 			 * appointments tied to it, then we shouldn't create any appointment
 			 * */
-			if( !StringUtils.equals( statusResponse.getStatus( ), STATUS_VALIDATED ) ||
-					ArrayUtils.isNotEmpty( statusResponse.getAppointments( ) ) )
+			if( !StringUtils.equals( statusAntsNumber, STATUS_VALIDATED ) ||
+					CollectionUtils.isNotEmpty( listAntsNumberAppointments ) )
 			{
+				AppLogService.error(
+						"{} - Can't create ANTS appointment: Appointment {} with ANTS number '{}' has a status '{}' and {} appointment(s)",
+						BEAN_SERVICE, idAppointment, statusResponse.getAntsApplicationValue( ), listAntsNumberAppointments.size( ) );
+
 				return false;
 			}
 		}
@@ -607,32 +635,50 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 * Check if the status of the given application numbers are valid and allow to delete
 	 * existing appointments ('validated' status and at least 1 element in their list of appointment)
 	 * 
+	 * @param applicationContent
+	 * 				Map containing the data of the appointment being processed
+	 * @param idAppointment
+	 * 				ID of the appointment being processed
 	 * @param applicationNumberList
 	 * 				List of ANTS application numbers to check for potential deletion
 	 * @return
 	 * 				true if the appointments with the given application numbers can be deleted,
 	 * 				false otherwise
+	 * @throws AntsException
 	 */
-	public static boolean isApplicationNumberListValidForDeletion( List<String> applicationNumberList ) 
+	public static boolean isApplicationNumberListValidForDeletion( Map<String, String> applicationContent, int idAppointment, List<String> applicationNumberList )
+			throws AntsException
 	{
 		List<AntsStatusResponsePOJO> statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
 
 		if( CollectionUtils.isEmpty( statusResponseList ) )
 		{
+			AppLogService.info( "{} no status retrieved for the ANTS numbers {}",
+					BEAN_SERVICE, Arrays.toString( applicationNumberList.toArray( ) ) );
 			return false;
 		}
 
 		// Check the validity of each application number's status and appointments
 		for( AntsStatusResponsePOJO statusResponse : statusResponseList )
 		{
+			String statusAntsNumber = statusResponse.getStatus( );
+			List<AntsAppointmentContent> listAntsNumberAppointments = statusResponse.getAppointments( );
+
 			/* If the application number hasn't been validated, and if it has no
 			 * appointment tied to it, then we can't delete it
 			 * */
-			if( !StringUtils.equals( statusResponse.getStatus( ), STATUS_VALIDATED ) &&
-					ArrayUtils.isEmpty( statusResponse.getAppointments( ) ) )
+			if( !StringUtils.equals( statusAntsNumber, STATUS_VALIDATED ) &&
+					CollectionUtils.isEmpty( listAntsNumberAppointments ) )
 			{
+				AppLogService.error(
+						"{} - Can't delete ANTS appointment: Appointment {} with ANTS number '{}' has a status '{}' and {} appointment(s)",
+						BEAN_SERVICE, idAppointment, statusResponse.getAntsApplicationValue( ), listAntsNumberAppointments.size( ) );
+
 				return false;
 			}
+			// Check if the current appointment's data matches the data on the ANTS' database.
+			// If the data doesn't match, then the appointment can't be deleted, so an exception will be thrown
+			compareLocalAppointmentDataWithAntsData( idAppointment, applicationContent, statusResponse );
 		}
 		return true;
 	}
@@ -663,12 +709,84 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		{
 			String fieldName = fieldNames.next( );
 			JsonNode field = jsonNode.get( fieldName );
-			statusList.add(
-					mapper.readerFor( AntsStatusResponsePOJO.class )
-					.readValue( field.toString() )
-					);
+
+			AntsStatusResponsePOJO responsePOJO = mapper.readerFor( AntsStatusResponsePOJO.class )
+					.readValue( field.toString() );
+
+			responsePOJO.setAntsApplicationValue( fieldName );
+
+			statusList.add( responsePOJO );
 		}
 		return statusList;
+	}
+
+	/**
+	 * Compare the data (date, location) of the appointment being processed to the data of the appointment currently
+	 * on the ANTS database. This is useful in some specific cases where we try to delete an ANTS appointment unsuccessfully
+	 * but still receive a 200 status code.
+	 *
+	 * @param idAppointment
+	 * 				ID of the appointment being processed
+	 * @param applicationContent
+	 * 				Map containing the appointment data (date, location, etc.)
+	 * @param antsStatusResponse
+	 * 				The content of the response from the ANTS after a GET STATUS request
+	 * @throws AntsException
+	 */
+	private static void compareLocalAppointmentDataWithAntsData( int idAppointment, Map<String, String> applicationContent, AntsStatusResponsePOJO antsStatusResponse )
+			throws AntsException
+	{
+		List<AntsAppointmentContent> listAppointments = antsStatusResponse.getAppointments( );
+		String appointmentDate = "";
+		String appointmentLocation = "";
+
+		try
+		{
+			appointmentDate = URLDecoder.decode( applicationContent.get( KEY_DATE ), "UTF-8" );
+			appointmentLocation = URLDecoder.decode( applicationContent.get( KEY_LOCATION ), "UTF-8" );
+		}
+		catch ( UnsupportedEncodingException e )
+		{
+			AppLogService.error( BEAN_SERVICE, e );
+		}
+
+		// Check the content of all the appointments that exist for this specific ANTS application
+		for( AntsAppointmentContent antsAppointmentContent : listAppointments )
+		{
+			boolean hasMismatchingData = false;
+			StringBuilder logMessageAnts = new StringBuilder( "Can't delete ANTS appointment - Appointment " ).append( idAppointment );
+			logMessageAnts.append( " with ANTS application number " ).append( antsStatusResponse.getAntsApplicationValue( ) );
+
+			// If the date of the appointment in the ANTS database does not match the one being processed
+			if( !LocalDateTime.parse( antsAppointmentContent.getAppointmentDate( ) ).equals( LocalDateTime.parse( appointmentDate ) ) )
+			{
+				hasMismatchingData = true;
+
+				logMessageAnts.append( " - The date and time of the appointments don't match: ANTS expects '" )
+				.append( antsAppointmentContent.getAppointmentDate( ) )
+				.append( "' but was sent '" )
+				.append( appointmentDate )
+				.append( "'" );
+			}
+			// If the location of the appointment in the ANTS database does not match the one being processed
+			if( !antsAppointmentContent.getMeetingPoint( ).equals( appointmentLocation ) )
+			{
+				hasMismatchingData = true;
+
+				logMessageAnts.append( " - The locations of the appointments don't match: ANTS expects '" )
+				.append( antsAppointmentContent.getMeetingPoint( ) )
+				.append( "' but was sent '" )
+				.append( appointmentLocation )
+				.append( "'" );
+			}
+
+			// If any of the data used to delete an appointment does not match the data stored in
+			// the ANTS database, then throw a custom exception to show the error
+			if( hasMismatchingData )
+			{
+				throw new AntsException( logMessageAnts.toString( ) );
+			}
+		}
 	}
 
 	/**

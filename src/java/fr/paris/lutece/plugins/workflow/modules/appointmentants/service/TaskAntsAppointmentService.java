@@ -581,6 +581,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	public static boolean isApplicationNumberListValidForCreation( List<String> applicationNumberList ) 
 	{
+		// Initialize the HttpAccess Object used to make REST calls
+		TaskAntsAppointmentRest.initHttpAccessForAnts( );
+
 		List<AntsStatusResponsePOJO> statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
 
 		if( CollectionUtils.isEmpty( statusResponseList ) )
@@ -615,6 +618,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	public static boolean isApplicationNumberListValidForDeletion( List<String> applicationNumberList ) 
 	{
+		// Initialize the HttpAccess Object used to make REST calls
+		TaskAntsAppointmentRest.initHttpAccessForAnts( );
+
 		List<AntsStatusResponsePOJO> statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
 
 		if( CollectionUtils.isEmpty( statusResponseList ) )

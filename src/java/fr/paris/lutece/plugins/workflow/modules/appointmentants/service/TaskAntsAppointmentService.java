@@ -38,6 +38,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -64,6 +65,7 @@ import fr.paris.lutece.plugins.appointment.web.AppointmentApp;
 import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
 import fr.paris.lutece.plugins.genericattributes.business.Response;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsAddAppointmentResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsDeleteAppointmentResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
@@ -150,20 +152,26 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 * 				ID of the appointment that will be processed
 	 * @param idTask
 	 * 				ID of the workflow task calling this method
+	 * @param antsAppointmentHistory
+	 * 				Instance of TaskAntsAppointmentHistory object used to save the task's history
 	 * @return
 	 * 				true if it was successfully created, returns false if it failed
 	 */
 	@Override
-	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
+	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask, TaskAntsAppointmentHistory antsAppointmentHistory )
 	{
 		Map<String, String> applicationContent = getAppointmentData( request, idAppointment, false );
 
 		boolean isAppointmentCreated = false;
 
-		List<String> applicationNumberList = getAntsApplicationValues(
+		// Get the ANTS application numbers from the appointment's Responses
+		String strAntsApplicationNumbers = getAntsApplicationValuesFromResponse(
 				idAppointment,
 				getAntsApplicationFieldId( idTask )
 				);
+
+		// Split the potential ANTS application values retrieved from the appointment's Responses
+		List<String> applicationNumberList = splitAntsApplicationValues( strAntsApplicationNumbers, APPLICATION_NUMBERS_SEPARATOR );
 
 		// If the appointment has no application number(s), then stop the task
 		if( CollectionUtils.isEmpty( applicationNumberList ) )
@@ -171,6 +179,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			// We return true, so the task stops with a positive result
 			return true;
 		}
+
+		// Set the ANTS application numbers in the task's history
+		antsAppointmentHistory.setAntsApplicationNumbers( strAntsApplicationNumbers );
 
 		// Check if the application number used are valid and allow appointments creation
 		if( isApplicationNumberListValidForCreation( applicationNumberList ) ) {
@@ -222,21 +233,26 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 * 				ID of the appointment that will be processed
 	 * @param idTask
 	 * 				ID of the workflow task calling this method
+	 * @param antsAppointmentHistory
+	 * 				Instance of TaskAntsAppointmentHistory object used to save the task's history
 	 * @return
 	 * 				true if it was successfully deleted, returns false if it failed
 	 */
 	@Override
-	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask )
+	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask, TaskAntsAppointmentHistory antsAppointmentHistory )
 	{
 		Map<String, String> applicationContent = getAppointmentData( request, idAppointment, true );
 
 		boolean isAppointmentDeleted = false;
 
-		// Retrieve the application number(s) from the current appointment
-		List<String> applicationNumberList = getAntsApplicationValues(
+		// Get the ANTS application numbers from the appointment's Responses
+		String strAntsApplicationNumbers = getAntsApplicationValuesFromResponse(
 				idAppointment,
 				getAntsApplicationFieldId( idTask )
 				);
+
+		// Split the potential ANTS application values retrieved from the appointment's Responses
+		List<String> applicationNumberList = splitAntsApplicationValues( strAntsApplicationNumbers, APPLICATION_NUMBERS_SEPARATOR );
 
 		// If the appointment has no application number(s), then stop the task
 		if( CollectionUtils.isEmpty( applicationNumberList ) )
@@ -244,6 +260,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			// We return true, so the task stops with a positive result
 			return true;
 		}
+
+		// Set the ANTS application numbers in the task's history
+		antsAppointmentHistory.setAntsApplicationNumbers( strAntsApplicationNumbers );
 
 		// Check if the application numbers used are valid and still allow the appointments to be deleted
 		if( isApplicationNumberListValidForDeletion( applicationNumberList ) ) {
@@ -741,43 +760,48 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * Get the list of application numbers tied to an appointment
+	 * Get the ANTS application numbers value tied to an appointment
 	 * 
 	 * @param idAppointment
 	 * 				ID of the appointment
 	 * @param entryFieldId
 	 * 				ID of the Entry used to save ANTS application numbers
 	 * @return
-	 * 				A List of application numbers as strings
+	 * 				The ANTS application numbers value as a String
 	 */
-	public static List<String> getAntsApplicationValues( int idAppointment, int entryFieldId )
+	public static String getAntsApplicationValuesFromResponse( int idAppointment, int entryFieldId )
 	{
 		List<Response> responseList = AppointmentResponseService.findListResponse( idAppointment );
-
-		List<String> applicationValuesList = new ArrayList<>( );
 
 		for( Response response : responseList )
 		{
 			// If the response comes from an Entry that has the specified ID, then we retrieve its value
 			if( response.getEntry( ).getIdEntry( ) == entryFieldId )
 			{
-				String responseValue = response.getResponseValue( );
-
-				/* Check if the application numbers are in the same String, only separated by a specific character.
-				 * If they are not, then we consider that each number is saved in its own Response
-				 * */
-				if( StringUtils.contains( responseValue, APPLICATION_NUMBERS_SEPARATOR ) )
-				{
-					String[] appNumbersArray = StringUtils.split( responseValue, APPLICATION_NUMBERS_SEPARATOR );
-					return Arrays.asList( appNumbersArray );
-				}
-				else
-				{
-					applicationValuesList.add( response.getResponseValue( ) );
-				}
+				return response.getResponseValue( );
 			}
 		}
-		return applicationValuesList;
+		return null;
+	}
+
+	/**
+	 * Split the values from a String with a specific separator
+	 * 
+	 * @param antsApplicationValues
+	 * 				The String containing the values to split
+	 * @param separator
+	 * 				Character used to separate the different values
+	 * @return
+	 * 				A List containing the separated values
+	 */
+	public static List<String> splitAntsApplicationValues( String antsApplicationValues, String separator )
+	{
+		if( StringUtils.isNotBlank( antsApplicationValues ) )
+		{
+			String[] appNumbersArray = StringUtils.split( antsApplicationValues, separator );
+			return Arrays.asList( appNumbersArray );
+		}
+		return Collections.emptyList( );
 	}
 
 	/**

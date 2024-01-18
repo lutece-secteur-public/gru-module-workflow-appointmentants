@@ -47,9 +47,12 @@
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfig"
 		scope="prototype" />
         
-	<!-- DAO -->
+	<!-- DAOs -->
 	<bean id="workflow-appointmentants.taskAntsAppointmentConfigDAO"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO" />
+
+	<bean id="workflow-appointmentants.taskAntsAppointmentHistoryDAO"
+		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistoryDAO" />
 
 	<!-- Services -->
 	<bean id="workflow-appointmentants.taskAntsAppointmentConfigService"
@@ -58,6 +61,9 @@
 
 	<bean id="workflow-appointmentants.taskAntsAppointmentService"
 		class="fr.paris.lutece.plugins.workflow.modules.appointmentants.service.TaskAntsAppointmentService" />
+
+	<bean id="workflow-appointmentants.taskAntsAppointmentHistoryService"
+        class="fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history.TaskAntsAppointmentHistoryService" />
 
 	<!-- Web Components -->
 	<!-- Web component ADD an appointment -->

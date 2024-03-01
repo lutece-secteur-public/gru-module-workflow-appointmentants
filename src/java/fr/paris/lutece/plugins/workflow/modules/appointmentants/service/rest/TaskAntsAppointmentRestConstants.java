@@ -67,6 +67,10 @@ public class TaskAntsAppointmentRestConstants {
 	// Expected date-time pattern from the ANTS services. Ex: "2023-11-20 08:45:00" (pattern: ^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}(:\d{2}?)$)
 	public static final DateTimeFormatter ANTS_APPOINTMENT_DATETIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
+	// Timeout properties specific to the ANTS HTTP calls
+    public static final String PROPERTY_SOCKET_TIMEOUT = "ants.api.socketTimeout";
+    public static final String PROPERTY_CONNECTION_TIMEOUT = "ants.api.connectionTimeout";
+
 	private TaskAntsAppointmentRestConstants( )
 	{
 	}

@@ -36,6 +36,7 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest;
 import java.util.HashMap;
 import java.util.Map;
 
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.utils.HttpCallsUtils;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.util.httpaccess.HttpAccess;
 import fr.paris.lutece.util.httpaccess.HttpAccessException;
@@ -47,10 +48,27 @@ import fr.paris.lutece.util.httpaccess.HttpAccessException;
  */
 public class TaskAntsAppointmentRest {
 
+	/**
+	 * HttpAccess object used for the ANTS REST calls
+	 */
+	private static HttpAccess httpAccessAnts;
+
 	private TaskAntsAppointmentRest( )
 	{
 	}
-	
+
+	/**
+	 * Initialize the HttpAccess Object with values specific to the ANTS ( socket timeout, connection timeout, etc. )
+	 */
+	public static void initHttpAccessForAnts( )
+	{
+		// Create a new HttpAccess object with specific timeout values, if any were set,
+        // otherwise the default configuration will be used
+		httpAccessAnts = HttpCallsUtils.getHttpAccessTimeoutFromProperties(
+				TaskAntsAppointmentRestConstants.PROPERTY_SOCKET_TIMEOUT,
+				TaskAntsAppointmentRestConstants.PROPERTY_CONNECTION_TIMEOUT );
+	}
+
 	/**
 	 * Add an appointment to the ANTS database through their API, by using
 	 * a POST method
@@ -66,12 +84,10 @@ public class TaskAntsAppointmentRest {
 	public static String addAntsAppointment( String addAppointmentUrl, String token )
 			throws HttpAccessException
 	{		
-		HttpAccess httpAccess = new HttpAccess(  );
-		
 		Map<String, String> headersRequest = new HashMap<>( );
         headersRequest.put( AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_HEADER ), token );
 
-        return httpAccess.doPost( addAppointmentUrl, null, null, null, headersRequest );
+        return httpAccessAnts.doPost( addAppointmentUrl, null, null, null, headersRequest );
 	}
 	
 	/**
@@ -89,12 +105,10 @@ public class TaskAntsAppointmentRest {
 	public static String deleteAntsAppointment( String deleteAppointmentUrl, String token )
 			throws HttpAccessException
 	{		
-		HttpAccess httpAccess = new HttpAccess(  );
-		
 		Map<String, String> headersRequest = new HashMap<>( );
         headersRequest.put( AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_HEADER ), token );
 
-        return httpAccess.doDelete( deleteAppointmentUrl, null, null, headersRequest, null );
+        return httpAccessAnts.doDelete( deleteAppointmentUrl, null, null, headersRequest, null );
 	}
 	
 	/**
@@ -112,11 +126,9 @@ public class TaskAntsAppointmentRest {
 	public static String getAntsAppointmentStatus( String getStatusUrl, String token ) 
 			throws HttpAccessException
 	{
-		HttpAccess httpAccess = new HttpAccess(  );
-		
 		Map<String, String> headersRequest = new HashMap<>( );
         headersRequest.put( AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_HEADER ), token );
 
-        return httpAccess.doGet( getStatusUrl, null, null, headersRequest );
+        return httpAccessAnts.doGet( getStatusUrl, null, null, headersRequest );
 	}
 }

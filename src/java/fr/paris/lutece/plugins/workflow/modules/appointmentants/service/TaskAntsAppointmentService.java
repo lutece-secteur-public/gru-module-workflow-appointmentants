@@ -845,7 +845,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		if( StringUtils.isNotBlank( antsApplicationValues ) )
 		{
 			String[] appNumbersArray = StringUtils.split( antsApplicationValues, separator );
-			return Arrays.asList( appNumbersArray );
+			return Arrays.asList( StringUtils.stripAll( appNumbersArray ) );
 		}
 		return Collections.emptyList( );
 	}

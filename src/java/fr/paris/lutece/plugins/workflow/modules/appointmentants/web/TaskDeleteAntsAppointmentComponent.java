@@ -39,7 +39,13 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.lang3.StringUtils;
+
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.WorkflowAppointmentAntsPlugin;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history.ITaskAntsAppointmentHistoryService;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history.TaskAntsAppointmentHistoryService;
+import fr.paris.lutece.plugins.workflow.utils.WorkflowUtils;
 import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
 import fr.paris.lutece.plugins.workflowcore.service.task.ITask;
 import fr.paris.lutece.portal.service.i18n.I18nService;
@@ -51,11 +57,31 @@ import fr.paris.lutece.portal.service.i18n.I18nService;
  */
 public class TaskDeleteAntsAppointmentComponent extends AbstractTaskAntsAppointmentComponent
 {
+	/**
+	 * Task's configuration service
+	 */
 	@Inject
 	@Named( WorkflowAppointmentAntsPlugin.BEAN_CONFIG )
 	private ITaskConfigService _config;
 
+	/**
+	 * Task's history service
+	 */
+	@Inject
+	@Named( TaskAntsAppointmentHistoryService.BEAN_SERVICE )
+	private ITaskAntsAppointmentHistoryService _antsAppointmentHistoryService;
+
+	/**
+	 * Task Title
+	 */
 	private static final String PROPERTY_TASK_TITLE = "module.workflow.appointmentants.delete_appointment.task_title";
+
+	/**
+	 * Task's history messages
+	 */
+	private static final String MESSAGE_TASK_APPOINTMENT_DELETED_SUCCESS = "module.workflow.appointmentants.delete_appointment.message.appointmentDeletionSuccess";
+	private static final String MESSAGE_TASK_APPOINTMENT_DELETED_FAILURE = "module.workflow.appointmentants.delete_appointment.message.appointmentDeletionFailure";
+	private static final String MESSAGE_TASK_APPOINTMENT_NO_ANTS_NUMBER = "module.workflow.appointmentants.ants_appointment.message.noAntsApplicationNumber";
 
 	/**
      * {@inheritDoc}
@@ -76,4 +102,43 @@ public class TaskDeleteAntsAppointmentComponent extends AbstractTaskAntsAppointm
     {
         return doSaveConfig( request, task, _config );
     }
+
+    /**
+     * {@inheritDoc}
+     */
+	@Override
+	public String getDisplayTaskInformation( int nIdHistory, HttpServletRequest request, Locale locale, ITask task )
+	{
+		// Retrieve the task's history
+		TaskAntsAppointmentHistory taskAppointmentHistory = _antsAppointmentHistoryService.findByPrimaryKey(
+				nIdHistory,
+				task.getId( ),
+				WorkflowUtils.getPlugin( ) );
+
+		// If the task has history data, display it in the appointment's history
+		if( taskAppointmentHistory != null )
+		{
+			Object[] args = new Object[1];
+			// Get the ANTS application numbers to be displayed in the task's history
+			if( StringUtils.isNotBlank( taskAppointmentHistory.getAntsApplicationNumbers( ) ) )
+			{
+				args[0] = taskAppointmentHistory.getAntsApplicationNumbers( );
+			}
+			// If there are no ANTS application numbers, then display a specific message instead
+			else
+			{
+				args[0] = I18nService.getLocalizedString(
+						MESSAGE_TASK_APPOINTMENT_NO_ANTS_NUMBER,
+						locale );
+			}
+
+			// Return the message to be displayed in the task's history informations
+			return I18nService.getLocalizedString(
+					taskAppointmentHistory.isTaskSuccessful( ) ? MESSAGE_TASK_APPOINTMENT_DELETED_SUCCESS : MESSAGE_TASK_APPOINTMENT_DELETED_FAILURE,
+					args,
+					locale );
+		}
+		// If the task has no history data, nothing will be displayed
+		return StringUtils.EMPTY;
+	}
 }

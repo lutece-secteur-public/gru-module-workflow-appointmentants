@@ -33,6 +33,8 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import javax.inject.Inject;
@@ -40,6 +42,12 @@ import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
 import fr.paris.lutece.api.user.User;
+import fr.paris.lutece.plugins.appointment.service.AppointmentResponseService;
+import fr.paris.lutece.plugins.genericattributes.business.Response;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history.ITaskAntsAppointmentHistoryService;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history.TaskAntsAppointmentHistoryService;
+import fr.paris.lutece.plugins.workflow.utils.WorkflowUtils;
 import fr.paris.lutece.plugins.workflowcore.business.resource.ResourceHistory;
 import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
 import fr.paris.lutece.plugins.workflowcore.service.resource.IResourceHistoryService;
@@ -62,15 +70,25 @@ public class TaskAddAntsAppointment extends SimpleTask
 	private IResourceHistoryService _resourceHistoryService;
 
 	/**
-	 * Task configuration
+	 * Task's configuration service
 	 */
 	@Inject
 	@Named( WorkflowAppointmentAntsPlugin.BEAN_CONFIG )
 	private ITaskConfigService _config;
 
+	/**
+	 * Task's service
+	 */
 	@Inject
 	@Named( TaskAntsAppointmentService.BEAN_SERVICE )
 	private ITaskAntsAppointmentService _antsAppointmentService;
+
+	/**
+	 * Task's history service
+	 */
+	@Inject
+	@Named( TaskAntsAppointmentHistoryService.BEAN_SERVICE )
+	private ITaskAntsAppointmentHistoryService _antsAppointmentHistoryService;
 
 	/**
 	 * Title of the task
@@ -86,15 +104,42 @@ public class TaskAddAntsAppointment extends SimpleTask
 		// Get the resourceHistory to find the resource (i.e the appointment) to work with
 		ResourceHistory resourceHistory = _resourceHistoryService.findByPrimaryKey( nIdResourceHistory );
 
+		// Task's execution result
+		boolean isTaskResultPositive = false;
+
+		// Create the current task's history object
+		TaskAntsAppointmentHistory antsAppointmentHistory = new TaskAntsAppointmentHistory( );
+
 		try
 		{
-			return _antsAppointmentService.createAntsAppointment( request, resourceHistory.getIdResource( ), this.getId( ) );
+			isTaskResultPositive = _antsAppointmentService.createAntsAppointment( request, resourceHistory.getIdResource( ), this.getId( ), antsAppointmentHistory );
 		}
 		catch ( Exception e )
 		{
 			AppLogService.error( CLASS_NAME, e );
-			return false;
 		}
+
+		saveTaskHistory( antsAppointmentHistory, nIdResourceHistory, isTaskResultPositive );
+		return isTaskResultPositive;
+	}
+
+	/**
+	 * Save the current task's history in the database
+	 * 
+	 * @param antsAppointmentHistory
+	 *            Instance of TaskAntsAppointmentHistory object to save
+	 * @param idResourceHistory
+	 *            ID of the resource history used for the task
+	 * @param isTaskSuccessful
+	 *            Boolean result returned by the task
+	 */
+	private void saveTaskHistory( TaskAntsAppointmentHistory antsAppointmentHistory, int idResourceHistory, boolean isTaskSuccessful )
+	{
+		antsAppointmentHistory.setIdResourceHistory( idResourceHistory );
+		antsAppointmentHistory.setIdTask( this.getId( ) );
+		antsAppointmentHistory.setTaskSuccessState( isTaskSuccessful );
+
+		_antsAppointmentHistoryService.create( antsAppointmentHistory, WorkflowUtils.getPlugin( ) );
 	}
 
 	/**
@@ -113,5 +158,15 @@ public class TaskAddAntsAppointment extends SimpleTask
 	public void doRemoveConfig( )
 	{
 		_config.remove( this.getId( ) );
+		_antsAppointmentHistoryService.removeByTask( this.getId( ), WorkflowUtils.getPlugin( ) );
+	}
+
+	/**
+     * {@inheritDoc}
+     */
+	@Override
+	public void doRemoveTaskInformation( int nIdHistory )
+	{
+		_antsAppointmentHistoryService.removeByHistory( nIdHistory, this.getId( ), WorkflowUtils.getPlugin( ) );
 	}
 }

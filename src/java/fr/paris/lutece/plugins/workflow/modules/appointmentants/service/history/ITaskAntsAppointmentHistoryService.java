@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2023, City of Paris
+ * Copyright (c) 2002-2024, City of Paris
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,17 +31,56 @@
  *
  * License 1.0
  */
-package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
-
-import javax.servlet.http.HttpServletRequest;
+package fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history;
 
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
+import fr.paris.lutece.portal.service.plugin.Plugin;
 
-public interface ITaskAntsAppointmentService {
-	
-	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask, TaskAntsAppointmentHistory antsAppointmentHistory );
-	
-	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask, TaskAntsAppointmentHistory antsAppointmentHistory );
-	
-	public int getAntsApplicationFieldId( int idTask );
+public interface ITaskAntsAppointmentHistoryService
+{
+	/**
+	 * Create a new entry in the ANTS task's history table
+	 * 
+	 * @param taskAntsAppointmentHistory
+	 *            TaskAntsAppointmentHistory object to insert
+	 * @param plugin
+	 *            The Plugin
+	 */
+	void create( TaskAntsAppointmentHistory taskAntsAppointmentHistory, Plugin plugin );
+
+	/**
+	 * Remove the ANTS task's history associated with the history
+	 * and task specified in parameters
+	 * 
+	 * @param idHistory
+	 *            ID of the resource history used for the task
+	 * @param idTask
+	 *            ID of the task
+	 * @param plugin
+	 *            The Plugin
+	 */
+	void removeByHistory( int idHistory, int idTask, Plugin plugin );
+
+	/**
+	 * Remove the ANTS task's history associated with the task specified in parameters
+	 * 
+	 * @param idTask
+	 *            ID of the task
+	 * @param plugin
+	 *            The Plugin
+	 */
+	void removeByTask( int idTask, Plugin plugin );
+
+	/**
+	 * Find the data that matches the specified parameters, from the ANTS task's history table
+	 * 
+	 * @param idHistory
+	 *            ID of the resource history used for the task
+	 * @param idTask
+	 *            ID of the task
+	 * @param plugin
+	 *            The Plugin
+	 * @return The TaskAntsAppointmentHistory object matching the parameters, or null if none was found
+	 */
+	TaskAntsAppointmentHistory findByPrimaryKey( int idHistory, int idTask, Plugin plugin );
 }

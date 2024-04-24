@@ -48,6 +48,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.servlet.http.HttpServletRequest;
 
+import fr.paris.lutece.portal.service.datastore.DatastoreService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -115,7 +116,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 * Value of the ANTS API Token
 	 */
 	private static final String PROPERTY_API_OPT_AUTH_TOKEN_VALUE =
-			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_TOKEN_VALUE );
+			String.valueOf( DatastoreService.getDataValue( TaskAntsAppointmentRestConstants.ANTS_TOKEN_VALUE ,"") );
 
 	/**
 	 * Status value of an ANTS appointment ("validated", "consumed", etc.)

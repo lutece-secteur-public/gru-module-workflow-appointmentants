@@ -5,9 +5,7 @@ When a task is executed for an appointment, the ANTS application numbers related
 
 ## Prerequisites
 ### SET THE ANTS API KEY
-To use the ANTS API, this module requires a unique and valid KEY, which should be provided by the ANTS organization. That KEY has to be inserted in the **`workflow-appointmentants`** property file:
-- `webapp/WEB-INF/conf/plugins/workflow-appointmentants.properties`
-- Set the KEY in the property **`ants.api.opt.auth.token`**
+To use the ANTS API, this module requires a unique and valid KEY, which should be provided by the ANTS organization. That KEY has to be inserted to the site properties by the administrator via the backoffice interface.
 
 ### SET THE NETWORK ACCESS (OPTIONAL)
 In case your environment requires specific network configurations (using a proxy, etc.), then you can set them up in the **site**'s **`httpaccess`** property file:

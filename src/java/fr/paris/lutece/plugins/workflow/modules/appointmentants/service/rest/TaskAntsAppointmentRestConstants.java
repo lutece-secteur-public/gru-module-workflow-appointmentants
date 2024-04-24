@@ -50,7 +50,7 @@ public class TaskAntsAppointmentRestConstants {
 
 	// HEADERS
 	public static final String ANTS_TOKEN_HEADER = "ants.api.url.parameter.token";
-	public static final String ANTS_TOKEN_VALUE = "ants.api.opt.auth.token";
+	public static final String ANTS_TOKEN_VALUE = "module.appointment.ants.site_property.token";
 	
 	// PARAMETERS
 	public static final String ANTS_APPLICATION_ID = "ants.api.url.parameter.applicationid";

@@ -57,6 +57,7 @@ public class TaskAntsAppointmentRestConstants {
 	public static final String ANTS_APPLICATION_IDS = "ants.api.url.parameter.applicationids";
 	public static final String ANTS_MANAGEMENT_URL = "ants.api.url.parameter.managementurl"; 
 	public static final String ANTS_MEETING_POINT = "ants.api.url.parameter.meetingpoint";
+	public static final String ANTS_MEETING_POINT_ID = "ants.api.url.parameter.meetingpoint.id";
 	public static final String ANTS_APPOINTMENT_DATE = "ants.api.url.parameter.appointmentdate";
 	
 	// ANTS Response content

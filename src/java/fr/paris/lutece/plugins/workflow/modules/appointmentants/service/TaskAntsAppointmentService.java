@@ -62,7 +62,6 @@ import fr.paris.lutece.plugins.appointment.service.AppointmentResponseService;
 import fr.paris.lutece.plugins.appointment.service.AppointmentService;
 import fr.paris.lutece.plugins.appointment.service.AppointmentUtilities;
 import fr.paris.lutece.plugins.appointment.service.LocalizationService;
-import fr.paris.lutece.plugins.appointment.web.AppointmentApp;
 import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
 import fr.paris.lutece.plugins.genericattributes.business.Response;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO;
@@ -72,6 +71,7 @@ import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsDeleteA
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRest;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.rest.TaskAntsAppointmentRestConstants;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.util.AntsAppointmentUtils;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.util.httpaccess.HttpAccessException;
@@ -109,6 +109,8 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_MANAGEMENT_URL );
 	private static final String URL_PARAMETER_MEETING_POINT =
 			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_MEETING_POINT );
+	private static final String URL_PARAMETER_MEETING_POINT_ID =
+            AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_MEETING_POINT_ID );
 	private static final String URL_PARAMETER_APPOINTMENT_DATE =
 			AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_APPOINTMENT_DATE );
 
@@ -139,6 +141,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	public static final String KEY_URL = "url";
 	public static final String KEY_LOCATION = "location";
 	public static final String KEY_DATE = "date";
+	public static final String KEY_FORM_ID = "formId";
 
 	private TaskAntsAppointmentService( )
 	{
@@ -185,8 +188,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		// Set the ANTS application numbers in the task's history
 		antsAppointmentHistory.setAntsApplicationNumbers( strAntsApplicationNumbers );
 
+        // Retrieve the ID of the current appointment's Form
+        int formId = Integer.parseInt( applicationContent.get( KEY_FORM_ID ) );
+        // Generate the value of the "meeting_point_id" for this appointment
+        String strMeetingPointId = AntsAppointmentUtils.generateAntsMeetingPointId( formId );
+
 		// Check if the application number used are valid and allow appointments creation
-		if( isApplicationNumberListValidForCreation( idAppointment, applicationNumberList ) ) {
+		if( isApplicationNumberListValidForCreation( idAppointment, applicationNumberList, strMeetingPointId ) ) {
 
 			// For each application number available, create a new ANTS appointment
 			for( String appplicationNumber : applicationNumberList ) {
@@ -198,6 +206,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 						appplicationNumber,
 						applicationContent.get( KEY_URL ),
 						applicationContent.get( KEY_LOCATION ),
+						strMeetingPointId,
 						applicationContent.get( KEY_DATE )
 						);
 				try {
@@ -268,8 +277,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		// Set the ANTS application numbers in the task's history
 		antsAppointmentHistory.setAntsApplicationNumbers( strAntsApplicationNumbers );
 
+        // Retrieve the ID of the current appointment's Form
+        int formId = Integer.parseInt( applicationContent.get( KEY_FORM_ID ) );
+        // Generate the value of the "meeting_point_id" for this appointment
+        String strMeetingPointId = AntsAppointmentUtils.generateAntsMeetingPointId( formId );
+
 		// Check if the application numbers used are valid and still allow the appointments to be deleted
-		if( isApplicationNumberListValidForDeletion( idAppointment, applicationNumberList ) ) {
+		if( isApplicationNumberListValidForDeletion( idAppointment, applicationNumberList, strMeetingPointId ) ) {
 			// For each application number available, delete any existing ANTS appointment
 			for( String appplicationNumber : applicationNumberList ) {
 
@@ -279,6 +293,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT),
 						appplicationNumber,
 						applicationContent.get( KEY_LOCATION ),
+						strMeetingPointId,
 						applicationContent.get( KEY_DATE )
 						);
 				try {
@@ -325,27 +340,27 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				appointment.getAdminUserCreate( ).isEmpty( );
 	}
 
-	/**
-	 * Build the URL used to add an appointment in the ANTS DB
-	 * 
-	 * @param baseUrl
-	 * 				The base URL of the ANTS API
-	 * @param addAppointmentUrl
-	 * 				The ANTS API's endpoint used to add appointments
-	 * @param applicationId
-	 * 				The ANTS application number used to create the appointment
-	 * @param managementUrl
-	 * 				The URL used to access the appointment's web page
-	 * @param meetingPoint
-	 * 				The location of the appointment
-	 * @param dateTime
-	 * 				The date and time of the appointment
-	 * @return
-	 * 				The complete URL used to create this specific appointment in
-	 * 				the ANTS database
-	 */
+    /**
+     * Build the URL used to add an appointment in the ANTS DB
+     * 
+     * @param baseUrl
+     *            The base URL of the ANTS API
+     * @param addAppointmentUrl
+     *            The ANTS API's endpoint used to add appointments
+     * @param applicationId
+     *            The ANTS application number used to create the appointment
+     * @param managementUrl
+     *            The URL used to access the appointment's web page
+     * @param meetingPoint
+     *            The location of the appointment
+     * @param strMeetingPointId
+     *            The value of the "meeting_point_id" for the appointment's Form
+     * @param dateTime
+     *            The date and time of the appointment
+     * @return The complete URL used to create this specific appointment in the ANTS database
+     */
 	public static String buildAntsAddAppointmentUrl( String baseUrl, String addAppointmentUrl, String applicationId,
-			String managementUrl, String meetingPoint, String dateTime )
+			String managementUrl, String meetingPoint, String strMeetingPointId, String dateTime )
 	{
 		StringBuilder antsApiUrl =  new StringBuilder( baseUrl ).
 				append( addAppointmentUrl );
@@ -354,6 +369,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		urlItem.addParameter(URL_PARAMETER_APPLICATION_ID, applicationId );
 		urlItem.addParameter(URL_PARAMETER_MANAGEMENT_URL, managementUrl );
 		urlItem.addParameter(URL_PARAMETER_MEETING_POINT, meetingPoint );
+		urlItem.addParameter(URL_PARAMETER_MEETING_POINT_ID, strMeetingPointId );
 		urlItem.addParameter(URL_PARAMETER_APPOINTMENT_DATE, dateTime );
 
 		return urlItem.getUrl( );
@@ -376,26 +392,25 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return isAppointmentCreationSuccessful( response );
 	}
 
-	/**
-	 * Build the URL used to delete an appointment from the ANTS DB
-	 * 
-	 * @param baseUrl
-	 * 				The base URL of the ANTS API
-	 * @param deleteAppointmentUrl
-	 * 				The ANTS API's endpoint used to delete an appointment
-	 * @param applicationId
-	 * 				The ANTS application number used to identify the
-	 * 				appointment to delete
-	 * @param meetingPoint
-	 * 				The location of the appointment
-	 * @param dateTime
-	 * 				The date and time of the appointment
-	 * @return
-	 * 				The complete URL used to delete this specific appointment
-	 * 				from the ANTS database
-	 */
+    /**
+     * Build the URL used to delete an appointment from the ANTS DB
+     * 
+     * @param baseUrl
+     *            The base URL of the ANTS API
+     * @param deleteAppointmentUrl
+     *            The ANTS API's endpoint used to delete an appointment
+     * @param applicationId
+     *            The ANTS application number used to identify the appointment to delete
+     * @param meetingPoint
+     *            The location of the appointment
+     * @param strMeetingPointId
+     *            The value of the "meeting_point_id" for the appointment's Form
+     * @param dateTime
+     *            The date and time of the appointment
+     * @return The complete URL used to delete this specific appointment from the ANTS database
+     */
 	public static String buildAntsDeleteAppointmentUrl( String baseUrl, String deleteAppointmentUrl, String applicationId,
-			String meetingPoint, String dateTime )
+			String meetingPoint, String strMeetingPointId, String dateTime )
 	{
 		StringBuilder antsApiUrl =  new StringBuilder( baseUrl ).
 				append( deleteAppointmentUrl );
@@ -403,6 +418,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		UrlItem urlItem = new UrlItem( antsApiUrl.toString( ) );
 		urlItem.addParameter(URL_PARAMETER_APPLICATION_ID, applicationId );
 		urlItem.addParameter(URL_PARAMETER_MEETING_POINT, meetingPoint );
+		urlItem.addParameter(URL_PARAMETER_MEETING_POINT_ID, strMeetingPointId );
 		urlItem.addParameter(URL_PARAMETER_APPOINTMENT_DATE, dateTime );
 
 		return urlItem.getUrl( );
@@ -494,6 +510,10 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				KEY_DATE,
 				appointmentDateTime );
 
+        // Get the ID of this appointment's Form
+        int appointmentFormId = appointmentDto != null ? appointmentDto.getIdForm( ) : 0;
+        appointmentDataMap.put( KEY_FORM_ID, Integer.toString( appointmentFormId ) );
+
 		return appointmentDataMap;
 	}
 
@@ -523,21 +543,20 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return oldAppointment;
 	}
 
-	/**
-	 * Get the status of every ANTS application numbers given as parameter
-	 * 
-	 * @param applicationNumberList
-	 * 				List of the application numbers for which the status
-	 * 				will be retrieved
-	 * @return
-	 * 				A list of Objects representing the status of the given ANTS
-	 * 				application	numbers, returns an empty List if no element was found
-	 * @throws HttpAccessException
-	 */
-	public static List<AntsStatusResponsePOJO> getAntsStatusResponseAsObjects( List<String> applicationNumberList )
+    /**
+     * Get the status of every ANTS application numbers given as parameter
+     * 
+     * @param applicationNumberList
+     *            List of the application numbers for which the status will be retrieved
+     * @param strMeetingPointId
+     *            The value of the "meeting_point_id" parameter
+     * @return A list of Objects representing the status of the given ANTS application numbers, returns an empty List if no element was found
+     * @throws HttpAccessException
+     */
+	public static List<AntsStatusResponsePOJO> getAntsStatusResponseAsObjects( List<String> applicationNumberList, String strMeetingPointId )
 			throws HttpAccessException
 	{
-		String getStatusUrl = buildAntsGetStatusAppointmentUrl( applicationNumberList );
+		String getStatusUrl = buildAntsGetStatusAppointmentUrl( applicationNumberList, strMeetingPointId );
 
 		String response = "";
 
@@ -562,15 +581,15 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * Build the URL used to get the status of specific ANTS appointments
-	 * 
-	 * @param applicationIdsList
-	 * 				The List of ANTS application numbers to use
-	 * @return
-	 * 				The complete URL used to check the status of appointments
-	 * 				from the ANTS database
-	 */
-	public static String buildAntsGetStatusAppointmentUrl( List<String> applicationIdsList )
+     * Build the URL used to get the status of specific ANTS appointments
+     * 
+     * @param applicationIdsList
+     *            The List of ANTS application numbers to use
+     * @param strMeetingPointId
+     *            The value of the "meeting_point_id" for the current appointment's Form
+     * @return The complete URL used to check the status of appointments from the ANTS database
+     */
+	public static String buildAntsGetStatusAppointmentUrl( List<String> applicationIdsList, String strMeetingPointId )
 	{
 		// Build the base ANTS API URL used to retrieve the status of appointments
 		StringBuilder antsApisUrl = new StringBuilder(
@@ -583,27 +602,31 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		{
 			urlItem.addParameter( URL_PARAMETER_APPLICATION_IDS, applicationId );
 		}
+
+		// Add the "meeting_point_id" parameter to the URL
+		urlItem.addParameter( URL_PARAMETER_MEETING_POINT_ID, strMeetingPointId );
+
 		return urlItem.getUrl();
 	}
 
 	/**
-	 * Check if the status of the given application numbers are valid and allow to add
-	 * new appointments ('validated' status and empty list of appointments)
-	 * 
-	 * @param idAppointment
-	 * 				ID of the appointment being processed
-	 * @param applicationNumberList
-	 * 				List of ANTS application numbers to check for validity
-	 * @return
-	 * 				true if all the application numbers are valid, false otherwise
-	 */
-	public static boolean isApplicationNumberListValidForCreation( int idAppointment, List<String> applicationNumberList ) 
-	{
+     * Check if the status of the given application numbers are valid and allow to add new appointments ('validated' status and empty list of appointments)
+     * 
+     * @param idAppointment
+     *            ID of the appointment being processed
+     * @param applicationNumberList
+     *            List of ANTS application numbers to check for validity
+     * @param strMeetingPointId
+     *            The value of the "meeting_point_id" parameter
+     * @return true if all the application numbers are valid, false otherwise
+     */
+    public static boolean isApplicationNumberListValidForCreation( int idAppointment, List<String> applicationNumberList, String strMeetingPointId )
+    {
 		List<AntsStatusResponsePOJO> statusResponseList = null;
 		try
 		{
 			// Get the status of the given ANTS application number(s)
-			statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
+			statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList, strMeetingPointId );
 		}
 		catch ( Exception e )
 		{
@@ -639,25 +662,25 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		return true;
 	}
 
-	/**
-	 * Check if the status of the given application numbers are valid and allow to delete
-	 * existing appointments ('validated' status and at least 1 element in their list of appointment)
-	 * 
-	 * @param idAppointment
-	 * 				ID of the appointment being processed
-	 * @param applicationNumberList
-	 * 				List of ANTS application numbers to check for potential deletion
-	 * @return
-	 * 				true if the appointments with the given application numbers can be deleted,
-	 * 				false otherwise
-	 */
-	public static boolean isApplicationNumberListValidForDeletion( int idAppointment, List<String> applicationNumberList )
+    /**
+     * Check if the status of the given application numbers are valid and allow to delete existing appointments ('validated' status and at least 1 element in
+     * their list of appointment)
+     * 
+     * @param idAppointment
+     *            ID of the appointment being processed
+     * @param applicationNumberList
+     *            List of ANTS application numbers to check for potential deletion
+     * @param strMeetingPointId
+     *            The value of the "meeting_point_id" parameter
+     * @return true if the appointments with the given application numbers can be deleted, false otherwise
+     */
+	public static boolean isApplicationNumberListValidForDeletion( int idAppointment, List<String> applicationNumberList, String strMeetingPointId )
 	{
 		List<AntsStatusResponsePOJO> statusResponseList = null;
 		try
 		{
 			// Get the status of the given ANTS application number(s)
-			statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList );
+			statusResponseList = getAntsStatusResponseAsObjects( applicationNumberList, strMeetingPointId );
 		}
 		catch ( Exception e )
 		{

@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+-- changeset workflow-appointmentants:create_db_workflow-appointmentants.sql
+-- preconditions onFail:MARK_RAN onError:WARN
 DROP TABLE IF EXISTS workflow_task_ants_appointment;
 DROP TABLE IF EXISTS workflow_task_ants_appointment_history;
 

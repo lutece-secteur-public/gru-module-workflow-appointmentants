@@ -50,7 +50,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import fr.paris.lutece.portal.service.datastore.DatastoreService;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;

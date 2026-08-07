@@ -33,7 +33,7 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.util;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import fr.paris.lutece.plugins.appointment.business.appointment.Appointment;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;

@@ -1,3 +1,6 @@
+-- liquibase formatted sql
+-- changeset workflow-appointmentants:update_db_workflow_appointment_appointmentants-1.0.0-1.0.1.sql
+-- preconditions onFail:MARK_RAN onError:WARN
 --
 -- Table structure for the ANTS workflow tasks' history
 --

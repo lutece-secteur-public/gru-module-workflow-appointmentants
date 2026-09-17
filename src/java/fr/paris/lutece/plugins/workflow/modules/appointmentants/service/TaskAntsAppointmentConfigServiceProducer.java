@@ -33,15 +33,34 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service;
 
-import jakarta.servlet.http.HttpServletRequest;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfig;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO;
+import fr.paris.lutece.plugins.workflowcore.business.config.ITaskConfigDAO;
+import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
+import fr.paris.lutece.plugins.workflowcore.service.config.TaskConfigService;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Named;
 
-import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
-
-public interface ITaskAntsAppointmentService {
-	
-	public boolean createAntsAppointment( HttpServletRequest request, int idAppointment, int idTask, TaskAntsAppointmentHistory antsAppointmentHistory );
-	
-	public boolean deleteAntsAppointment( HttpServletRequest request, int idAppointment, int idTask, TaskAntsAppointmentHistory antsAppointmentHistory );
-	
-	public int getAntsApplicationFieldId( int idTask );
+/**
+ * CDI producer for the ANTS appointment task configuration service.
+ *
+ * Replaces the Spring bean {@code workflow-appointmentants.taskAntsAppointmentConfigService}
+ * (plain {@link TaskConfigService} with the {@code taskAntsAppointmentConfigDAO} reference).
+ * A producer method is used instead of a concrete {@link TaskConfigService} subclass because
+ * no custom behaviour is required — this mirrors the reference pattern.
+ */
+@ApplicationScoped
+public class TaskAntsAppointmentConfigServiceProducer
+{
+    @Produces
+    @ApplicationScoped
+    @Named( "workflow-appointmentants.taskAntsAppointmentConfigService" )
+    public ITaskConfigService produceTaskAntsAppointmentConfigService(
+            @Named( TaskAntsAppointmentConfigDAO.BEAN_NAME ) ITaskConfigDAO<TaskAntsAppointmentConfig> taskAntsAppointmentConfigDAO )
+    {
+        TaskConfigService taskConfigService = new TaskConfigService( );
+        taskConfigService.setTaskConfigDAO( (ITaskConfigDAO) taskAntsAppointmentConfigDAO );
+        return taskConfigService;
+    }
 }

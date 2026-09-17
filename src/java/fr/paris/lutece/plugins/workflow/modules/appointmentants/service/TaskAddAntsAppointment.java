@@ -37,9 +37,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 import fr.paris.lutece.api.user.User;
 import fr.paris.lutece.plugins.appointment.service.AppointmentResponseService;
@@ -61,6 +62,8 @@ import fr.paris.lutece.portal.service.util.AppLogService;
  * Workflow task used to add an appointment in the ANTS' database, through their exposed API
  * 
  */
+@Dependent
+@Named( "workflow-appointmentants.taskAddAntsAppointment" )
 public class TaskAddAntsAppointment extends SimpleTask
 {
 	public static final String CLASS_NAME = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + "TaskAddAntsAppointment";
@@ -99,7 +102,7 @@ public class TaskAddAntsAppointment extends SimpleTask
      * {@inheritDoc}
      */
 	@Override
-	public boolean processTaskWithResult( int nIdResourceHistory, HttpServletRequest request, Locale locale, User user )
+	public boolean processTaskWithResult( int nIdResource, String strResourceType, int nIdResourceHistory, HttpServletRequest request, Locale locale, User user )
 	{
 		// Get the resourceHistory to find the resource (i.e the appointment) to work with
 		ResourceHistory resourceHistory = _resourceHistoryService.findByPrimaryKey( nIdResourceHistory );

@@ -44,13 +44,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 import fr.paris.lutece.portal.service.datastore.DatastoreService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -82,6 +84,8 @@ import fr.paris.lutece.util.url.UrlItem;
  * Class containing useful methods to handle ANTS related tasks
  * 
  */
+@ApplicationScoped
+@Named( TaskAntsAppointmentService.BEAN_SERVICE )
 public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 	public static final String BEAN_SERVICE = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + ".taskAntsAppointmentService";
@@ -142,10 +146,6 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	public static final String KEY_LOCATION = "location";
 	public static final String KEY_DATE = "date";
 	public static final String KEY_FORM_ID = "formId";
-
-	private TaskAntsAppointmentService( )
-	{
-	}
 
 	/**
 	 * Create an appointment in the ANTS database
@@ -538,7 +538,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		}
 		catch ( Exception e )
 		{
-			AppLogService.info( BEAN_SERVICE + " removing appointment from ants database: {}", e.getMessage( ) );
+			AppLogService.info( "{} removing appointment from ants database: {}", BEAN_SERVICE, e.getMessage( ) );
 		}
 		return oldAppointment;
 	}
@@ -650,7 +650,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			/* If the application number hasn't been validated, or if it already has
 			 * appointments tied to it, then we shouldn't create any appointment
 			 * */
-			if( !StringUtils.equals( statusAntsNumber, STATUS_VALIDATED ) ||
+			if( !Strings.CS.equals( statusAntsNumber, STATUS_VALIDATED ) ||
 					ArrayUtils.isNotEmpty( listAntsNumberAppointments ) )
 			{
 				AppLogService.error(
@@ -704,7 +704,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			/* If the application number hasn't been validated, and if it has no
 			 * appointment tied to it, then we can't delete it
 			 * */
-			if( !StringUtils.equals( statusAntsNumber, STATUS_VALIDATED ) ||
+			if( !Strings.CS.equals( statusAntsNumber, STATUS_VALIDATED ) ||
 					ArrayUtils.isEmpty( listAntsNumberAppointments ) )
 			{
 				AppLogService.error(

@@ -38,10 +38,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 
 import fr.paris.lutece.plugins.appointment.service.EntryService;
 import fr.paris.lutece.plugins.appointment.service.FormService;
@@ -145,7 +146,7 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 		String paramActionSelect = request.getParameter( PARAMETER_SELECT_FORM );
 
 		// If a new form has been selected and the selection button has been clicked to apply the changes
-		if( StringUtils.equals( paramActionSelect, PARAMETER_SELECT_FORM ) &&
+		if( Strings.CS.equals( paramActionSelect, PARAMETER_SELECT_FORM ) &&
 				( Integer.parseInt( paramFormId ) != WorkflowUtils.CONSTANT_ID_NULL ) )
 		{
 			int formId = Integer.parseInt( paramFormId );

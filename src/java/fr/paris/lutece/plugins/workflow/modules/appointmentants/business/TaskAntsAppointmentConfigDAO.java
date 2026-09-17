@@ -33,6 +33,9 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
+
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.WorkflowAppointmentAntsPlugin;
 import fr.paris.lutece.plugins.workflowcore.business.config.ITaskConfigDAO;
 import fr.paris.lutece.util.sql.DAOUtil;
@@ -42,6 +45,8 @@ import fr.paris.lutece.util.sql.DAOUtil;
  * Provide Data Access methods for this Workflow
  *
  */
+@ApplicationScoped
+@Named( TaskAntsAppointmentConfigDAO.BEAN_NAME )
 public class TaskAntsAppointmentConfigDAO implements ITaskConfigDAO<TaskAntsAppointmentConfig>
 {
 

@@ -28,3 +28,8 @@ replay_pid*
 .project
 .settings/
 target/
+logs/
+java.io.tmpdir/
+.migration/
+e2e/artifacts/
+e2e/

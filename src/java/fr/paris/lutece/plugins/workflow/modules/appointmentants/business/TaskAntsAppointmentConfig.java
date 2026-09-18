@@ -33,6 +33,9 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.business;
 
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Named;
+
 import fr.paris.lutece.plugins.workflowcore.business.config.TaskConfig;
 
 /**
@@ -40,7 +43,9 @@ import fr.paris.lutece.plugins.workflowcore.business.config.TaskConfig;
  * Used to save the ID of the form used in the configuration and the
  * entry of that form used to retrieve ANTS' application numbers
  * 
- */
+  */
+@Dependent
+@Named( "workflow-appointmentants.taskAntsAppointmentConfig" )
 public class TaskAntsAppointmentConfig extends TaskConfig {
 	
 	/**

@@ -35,9 +35,10 @@ package fr.paris.lutece.plugins.workflow.modules.appointmentants.web;
 
 import java.util.Locale;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -46,6 +47,7 @@ import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.Workflow
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history.ITaskAntsAppointmentHistoryService;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history.TaskAntsAppointmentHistoryService;
 import fr.paris.lutece.plugins.workflow.utils.WorkflowUtils;
+import fr.paris.lutece.plugins.workflowcore.business.task.ITaskType;
 import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
 import fr.paris.lutece.plugins.workflowcore.service.task.ITask;
 import fr.paris.lutece.portal.service.i18n.I18nService;
@@ -55,21 +57,40 @@ import fr.paris.lutece.portal.service.i18n.I18nService;
  * Component used to handle the interface / visual aspect of the "Add ANTS appointment" task
  *
  */
+@ApplicationScoped
+@Named( "workflow-appointmentants.taskAddAntsAppointmentComponent" )
 public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointmentComponent
 {
-	/**
-	 * Task's configuration service
-	 */
-	@Inject
-	@Named( WorkflowAppointmentAntsPlugin.BEAN_CONFIG )
-	private ITaskConfigService _config;
-
 	/**
 	 * Task's history service
 	 */
 	@Inject
 	@Named( TaskAntsAppointmentHistoryService.BEAN_SERVICE )
 	private ITaskAntsAppointmentHistoryService _antsAppointmentHistoryService;
+
+	/**
+	 * Default constructor, required for CDI proxy
+	 */
+	TaskAddAntsAppointmentComponent( )
+	{
+	}
+
+	/**
+	 * Constructor with the task type and configuration service, injected by CDI
+	 *
+	 * @param taskType
+	 *            the type of the task
+	 * @param taskConfigService
+	 *            the service used for the task configuration
+	 */
+	@Inject
+	public TaskAddAntsAppointmentComponent(
+			@Named( "workflow-appointmentants.taskTaskAddAntsAppointment" ) ITaskType taskType,
+			@Named( WorkflowAppointmentAntsPlugin.BEAN_CONFIG ) ITaskConfigService taskConfigService )
+	{
+		setTaskType( taskType );
+		setTaskConfigService( taskConfigService );
+	}
 
 	/**
 	 * Task Title
@@ -91,7 +112,7 @@ public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointment
 	{
 		String taskTitle = I18nService.getLocalizedString( PROPERTY_TASK_TITLE, locale );
 		
-		return getDisplayConfigForm( request, taskTitle, locale, task, _config );
+		return getDisplayConfigForm( request, taskTitle, locale, task, getTaskConfigService( ) );
 	}
 
 	/**
@@ -100,7 +121,7 @@ public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointment
     @Override
     public String doSaveConfig( HttpServletRequest request, Locale locale, ITask task )
     {
-        return doSaveConfig( request, task, _config );
+        return doSaveConfig( request, task, getTaskConfigService( ) );
     }
 
     /**

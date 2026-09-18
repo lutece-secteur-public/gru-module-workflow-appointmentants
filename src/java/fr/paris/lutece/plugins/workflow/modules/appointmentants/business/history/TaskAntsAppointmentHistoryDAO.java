@@ -33,6 +33,9 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Named;
+
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.service.WorkflowAppointmentAntsPlugin;
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.util.sql.DAOUtil;
@@ -42,6 +45,8 @@ import fr.paris.lutece.util.sql.DAOUtil;
  * Provide Data Access methods for the history of the ANTS related tasks
  *
  */
+@ApplicationScoped
+@Named( TaskAntsAppointmentHistoryDAO.BEAN_NAME )
 public class TaskAntsAppointmentHistoryDAO implements ITaskAntsAppointmentHistoryDAO
 {
 	public static final String BEAN_NAME = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + ".taskAntsAppointmentHistoryDAO";

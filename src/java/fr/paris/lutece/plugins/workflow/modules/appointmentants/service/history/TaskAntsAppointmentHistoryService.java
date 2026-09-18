@@ -33,8 +33,9 @@
  */
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.service.history;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.ITaskAntsAppointmentHistoryDAO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
@@ -47,6 +48,8 @@ import fr.paris.lutece.portal.service.plugin.Plugin;
  * Class containing methods to handle the history of the ANTS related tasks
  * 
  */
+@ApplicationScoped
+@Named( TaskAntsAppointmentHistoryService.BEAN_SERVICE )
 public class TaskAntsAppointmentHistoryService implements ITaskAntsAppointmentHistoryService
 {
 	public static final String BEAN_SERVICE = WorkflowAppointmentAntsPlugin.PLUGIN_NAME + ".taskAntsAppointmentHistoryService";
@@ -57,10 +60,6 @@ public class TaskAntsAppointmentHistoryService implements ITaskAntsAppointmentHi
 	@Inject
 	@Named( TaskAntsAppointmentHistoryDAO.BEAN_NAME )
 	private ITaskAntsAppointmentHistoryDAO _task_ants_appointment_history_dao;
-
-	private TaskAntsAppointmentHistoryService( )
-	{
-	}
 
 	/**
      * {@inheritDoc}

@@ -43,6 +43,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -121,8 +123,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	/**
 	 * Value of the ANTS API Token
 	 */
-	private static final String PROPERTY_API_OPT_AUTH_TOKEN_VALUE =
-			String.valueOf( DatastoreService.getDataValue( TaskAntsAppointmentRestConstants.ANTS_TOKEN_VALUE ,"") );
+	private static final Pattern PATTERN_APPLICATION_NUMBER = Pattern.compile( "[A-Z0-9]{10}" );
 
 	/**
 	 * Status value of an ANTS appointment ("validated", "consumed", etc.)
@@ -387,7 +388,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	public static boolean addAntsAppointmentRestCall( String antsUrl ) throws HttpAccessException, IOException
 	{
-		String response = TaskAntsAppointmentRest.addAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
+		String response = TaskAntsAppointmentRest.addAntsAppointment( antsUrl, authToken( ) );
 
 		return isAppointmentCreationSuccessful( response );
 	}
@@ -436,7 +437,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	 */
 	public static boolean deleteAntsAppointmentRestCall( String antsUrl ) throws HttpAccessException, IOException
 	{
-		String response = TaskAntsAppointmentRest.deleteAntsAppointment( antsUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
+		String response = TaskAntsAppointmentRest.deleteAntsAppointment( antsUrl, authToken( ) );
 
 		return isAppointmentDeletionSuccessful( response );
 	}
@@ -562,7 +563,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		List<AntsStatusResponsePOJO> statusObjectsList = new ArrayList<>( );
 
-		response = TaskAntsAppointmentRest.getAntsAppointmentStatus( getStatusUrl, PROPERTY_API_OPT_AUTH_TOKEN_VALUE );
+		response = TaskAntsAppointmentRest.getAntsAppointmentStatus( getStatusUrl, authToken( ) );
 		AppLogService.debug( "{} - ANTS GET STATUS request successful - Response: {}", BEAN_SERVICE, response );
 
 		// If the HTTP call was made and returned a response
@@ -653,7 +654,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			if( !Strings.CS.equals( statusAntsNumber, STATUS_VALIDATED ) ||
 					ArrayUtils.isNotEmpty( listAntsNumberAppointments ) )
 			{
-				AppLogService.error(
+				AppLogService.info(
 						"{} - ANTS appointment not valid for creation: Appointment {} with ANTS number '{}' has a status '{}' and {} appointment(s)",
 						BEAN_SERVICE, idAppointment, Arrays.toString( applicationNumberList.toArray( ) ), statusAntsNumber, listAntsNumberAppointments.length );
 				return false;
@@ -707,7 +708,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			if( !Strings.CS.equals( statusAntsNumber, STATUS_VALIDATED ) ||
 					ArrayUtils.isEmpty( listAntsNumberAppointments ) )
 			{
-				AppLogService.error(
+				AppLogService.info(
 						"{} - ANTS appointment not valid for deletion: Appointment {} with ANTS number '{}' has a status '{}' and no appointment",
 						BEAN_SERVICE, idAppointment, Arrays.toString( applicationNumberList.toArray( ) ), statusAntsNumber );
 				return false;
@@ -855,23 +856,34 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	}
 
 	/**
-	 * Split the values from a String with a specific separator
+	 * Split the ANTS application numbers typed by the user, keeping only the well-formed ones: they go into the query
+	 * string of the ANTS calls.
 	 * 
 	 * @param antsApplicationValues
 	 * 				The String containing the values to split
 	 * @param separator
 	 * 				Character used to separate the different values
 	 * @return
-	 * 				A List containing the separated values
+	 * 				The well-formed application numbers
 	 */
 	public static List<String> splitAntsApplicationValues( String antsApplicationValues, String separator )
 	{
-		if( StringUtils.isNotBlank( antsApplicationValues ) )
+		if( StringUtils.isBlank( antsApplicationValues ) )
 		{
-			String[] appNumbersArray = StringUtils.split( antsApplicationValues, separator );
-			return Arrays.asList( appNumbersArray );
+			return Collections.emptyList( );
 		}
-		return Collections.emptyList( );
+		return Arrays.stream( StringUtils.split( antsApplicationValues, separator ) ).map( String::trim )
+				.filter( number -> PATTERN_APPLICATION_NUMBER.matcher( number ).matches( ) ).collect( Collectors.toList( ) );
+	}
+
+	/**
+	 * The ANTS API token of the site, read at each call so that a token changed in the site properties applies at once.
+	 * 
+	 * @return the token
+	 */
+	private static String authToken( )
+	{
+		return DatastoreService.getDataValue( TaskAntsAppointmentRestConstants.ANTS_TOKEN_VALUE, "" );
 	}
 
 	/**

@@ -43,15 +43,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
+import org.apache.commons.text.StringEscapeUtils;
 
 import fr.paris.lutece.plugins.appointment.service.EntryService;
 import fr.paris.lutece.plugins.appointment.service.FormService;
 import fr.paris.lutece.plugins.genericattributes.business.Entry;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfig;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
 import fr.paris.lutece.plugins.workflow.utils.WorkflowUtils;
 import fr.paris.lutece.plugins.workflow.web.task.NoFormTaskComponent;
 import fr.paris.lutece.plugins.workflowcore.service.config.ITaskConfigService;
 import fr.paris.lutece.plugins.workflowcore.service.task.ITask;
+import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.template.AppTemplateService;
 import fr.paris.lutece.portal.service.util.AppPathService;
 import fr.paris.lutece.util.ReferenceList;
@@ -84,6 +87,9 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 
 	// JSPs
 	private static final String JSP_MODIFY_TASK = "jsp/admin/plugins/workflow/ModifyTask.jsp";
+
+	// MESSAGES
+	private static final String MESSAGE_TASK_APPOINTMENT_NO_ANTS_NUMBER = "module.workflow.appointmentants.ants_appointment.message.noAntsApplicationNumber";
 
 	/**
 	 * Build and display the configuration page for the current task
@@ -282,6 +288,43 @@ public abstract class AbstractTaskAntsAppointmentComponent extends NoFormTaskCom
 		 * that this page is loaded for the first time, so we set the default values
 		 * */
 		return -1;
+	}
+
+	/**
+	 * Build the message displayed in the appointment's history. plugin-workflow writes the task information as HTML:
+	 * the message, which holds the application numbers typed by the user, is written as text
+	 *
+	 * @param taskAppointmentHistory
+	 * 				The task's history
+	 * @param strSuccessKey
+	 * 				Key of the message displayed when the task succeeded
+	 * @param strFailureKey
+	 * 				Key of the message displayed when the task failed
+	 * @param locale
+	 * 				The locale
+	 * @return
+	 * 				The message, escaped for HTML
+	 */
+	static String getTaskInformation( TaskAntsAppointmentHistory taskAppointmentHistory, String strSuccessKey, String strFailureKey, Locale locale )
+	{
+		Object[] args = new Object[1];
+		// Get the ANTS application numbers to be displayed in the task's history
+		if( StringUtils.isNotBlank( taskAppointmentHistory.getAntsApplicationNumbers( ) ) )
+		{
+			args[0] = taskAppointmentHistory.getAntsApplicationNumbers( );
+		}
+		// If there are no ANTS application numbers, then display a specific message instead
+		else
+		{
+			args[0] = I18nService.getLocalizedString( MESSAGE_TASK_APPOINTMENT_NO_ANTS_NUMBER, locale );
+		}
+
+		String strMessage = I18nService.getLocalizedString(
+				taskAppointmentHistory.isTaskSuccessful( ) ? strSuccessKey : strFailureKey,
+				args,
+				locale );
+
+		return StringEscapeUtils.escapeHtml4( strMessage );
 	}
 
 	/**

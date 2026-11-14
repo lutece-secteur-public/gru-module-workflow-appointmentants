@@ -102,7 +102,6 @@ public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointment
 	 */
 	private static final String MESSAGE_TASK_APPOINTMENT_ADDED_SUCCESS = "module.workflow.appointmentants.add_appointment.message.appointmentCreationSuccess";
 	private static final String MESSAGE_TASK_APPOINTMENT_ADDED_FAILURE = "module.workflow.appointmentants.add_appointment.message.appointmentCreationFailure";
-	private static final String MESSAGE_TASK_APPOINTMENT_NO_ANTS_NUMBER = "module.workflow.appointmentants.ants_appointment.message.noAntsApplicationNumber";
 
 	/**
      * {@inheritDoc}
@@ -139,25 +138,8 @@ public class TaskAddAntsAppointmentComponent extends AbstractTaskAntsAppointment
 		// If the task has history data, display it in the appointment's history
 		if( taskAppointmentHistory != null )
 		{
-			Object[] args = new Object[1];
-			// Get the ANTS application numbers to be displayed in the task's history
-			if( StringUtils.isNotBlank( taskAppointmentHistory.getAntsApplicationNumbers( ) ) )
-			{
-				args[0] = taskAppointmentHistory.getAntsApplicationNumbers( );
-			}
-			// If there are no ANTS application numbers, then display a specific message instead
-			else
-			{
-				args[0] = I18nService.getLocalizedString(
-						MESSAGE_TASK_APPOINTMENT_NO_ANTS_NUMBER,
-						locale );
-			}
-
 			// Return the message to be displayed in the task's history informations
-			return I18nService.getLocalizedString(
-					taskAppointmentHistory.isTaskSuccessful( ) ? MESSAGE_TASK_APPOINTMENT_ADDED_SUCCESS : MESSAGE_TASK_APPOINTMENT_ADDED_FAILURE,
-					args,
-					locale );
+			return getTaskInformation( taskAppointmentHistory, MESSAGE_TASK_APPOINTMENT_ADDED_SUCCESS, MESSAGE_TASK_APPOINTMENT_ADDED_FAILURE, locale );
 		}
 		// If the task has no history data, nothing will be displayed
 		return StringUtils.EMPTY;

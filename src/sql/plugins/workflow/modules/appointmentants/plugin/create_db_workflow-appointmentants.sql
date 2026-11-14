@@ -20,7 +20,7 @@ CREATE TABLE workflow_task_ants_appointment(
 CREATE TABLE workflow_task_ants_appointment_history(
   id_history INT NOT NULL,
   id_task INT NOT NULL,
-  is_task_successful SMALLINT NOT NULL DEFAULT 0,
+  is_task_successful SMALLINT DEFAULT 0 NOT NULL,
   value_ants_application_numbers VARCHAR(255) DEFAULT NULL,
   PRIMARY KEY (id_history, id_task)
 );

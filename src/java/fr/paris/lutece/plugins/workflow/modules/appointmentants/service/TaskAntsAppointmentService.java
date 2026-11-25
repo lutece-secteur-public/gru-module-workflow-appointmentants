@@ -198,8 +198,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		if( isApplicationNumberListValidForCreation( idAppointment, applicationNumberList, strMeetingPointId ) ) {
 
 			// For each application number available, create a new ANTS appointment
-			for( String appplicationNumber : applicationNumberList ) {
-
+			isAppointmentCreated = callForEachNumber( applicationNumberList, appplicationNumber -> {
 				// Build the ANTS URL used to create a new appointment
 				String antsURL = buildAntsAddAppointmentUrl(
 						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
@@ -210,29 +209,12 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 						strMeetingPointId,
 						applicationContent.get( KEY_DATE )
 						);
-				try {
-					// Create the appointment on the ANTS database
-					isAppointmentCreated = addAntsAppointmentRestCall( antsURL );
-
-					AppLogService.debug(
-							"{} ANTS appointment with number '{}' was {} for appointment with ID {}",
-							BEAN_SERVICE,
-							appplicationNumber,
-							isAppointmentCreated ? "created" : "not created",
-							idAppointment
-							);
-
-					// If the appointment was not created
-					if( !isAppointmentCreated )
-					{
-						return isAppointmentCreated;
-					}
-				}
-				catch( Exception e )
-				{
-					AppLogService.error( BEAN_SERVICE, e );
-				}
-			}
+				// Create the appointment on the ANTS database
+				boolean bCreated = addAntsAppointmentRestCall( antsURL );
+				AppLogService.debug( "{} ANTS appointment with number '{}' was {} for appointment with ID {}", BEAN_SERVICE, appplicationNumber,
+						bCreated ? "created" : "not created", idAppointment );
+				return bCreated;
+			} );
 		}
 		return isAppointmentCreated;
 	}
@@ -286,8 +268,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		// Check if the application numbers used are valid and still allow the appointments to be deleted
 		if( isApplicationNumberListValidForDeletion( idAppointment, applicationNumberList, strMeetingPointId ) ) {
 			// For each application number available, delete any existing ANTS appointment
-			for( String appplicationNumber : applicationNumberList ) {
-
+			isAppointmentDeleted = callForEachNumber( applicationNumberList, appplicationNumber -> {
 				// Build the ANTS URL used to delete an appointment
 				String antsURL = buildAntsDeleteAppointmentUrl(
 						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
@@ -297,31 +278,64 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 						strMeetingPointId,
 						applicationContent.get( KEY_DATE )
 						);
-				try {
-					// Delete the appointment from the ANTS database
-					isAppointmentDeleted = deleteAntsAppointmentRestCall( antsURL );
-
-					AppLogService.debug(
-							"{} ANTS appointment with number '{}' was {} for appointment with ID {}",
-							BEAN_SERVICE,
-							appplicationNumber,
-							isAppointmentDeleted ? "deleted" : "not deleted",
-							idAppointment
-							);
-
-					// If the appointment was not deleted successfully
-					if( !isAppointmentDeleted )
-					{
-						return isAppointmentDeleted;
-					}
-				}
-				catch ( Exception e )
-				{
-					AppLogService.error( BEAN_SERVICE, e );
-				}
-			}
+				// Delete the appointment from the ANTS database
+				boolean bDeleted = deleteAntsAppointmentRestCall( antsURL );
+				AppLogService.debug( "{} ANTS appointment with number '{}' was {} for appointment with ID {}", BEAN_SERVICE, appplicationNumber,
+						bDeleted ? "deleted" : "not deleted", idAppointment );
+				return bDeleted;
+			} );
 		}
 		return isAppointmentDeleted;
+	}
+
+	/**
+	 * A call to the ANTS API for one application number.
+	 */
+	@FunctionalInterface
+	interface AntsNumberCall
+	{
+		/**
+		 * Calls the ANTS API for one application number
+		 *
+		 * @param strApplicationNumber
+		 *            the application number
+		 * @return true if the ANTS API accepted the call
+		 * @throws Exception
+		 *             if the call failed
+		 */
+		boolean call( String strApplicationNumber ) throws Exception;
+	}
+
+	/**
+	 * Calls the ANTS API for each application number, in order.
+	 *
+	 * @param applicationNumberList
+	 *            the application numbers
+	 * @param antsCall
+	 *            the call for one number
+	 * @return true if the ANTS API accepted the call of every number
+	 */
+	static boolean callForEachNumber( List<String> applicationNumberList, AntsNumberCall antsCall )
+	{
+		boolean bResult = false;
+		for ( String strApplicationNumber : applicationNumberList )
+		{
+			try
+			{
+				bResult = antsCall.call( strApplicationNumber );
+			}
+			catch( Exception e )
+			{
+				// a failed call (HTTP error, timeout) is a failure of the task, not a call to skip
+				AppLogService.error( BEAN_SERVICE, e );
+				bResult = false;
+			}
+			if ( !bResult )
+			{
+				return false;
+			}
+		}
+		return bResult;
 	}
 
 	/**
@@ -642,6 +656,22 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			return false;
 		}
 
+		return areValidForCreation( idAppointment, applicationNumberList, statusResponseList );
+	}
+
+	/**
+	 * Check the status answered by the ANTS API: every application number is validated and has no appointment yet.
+	 *
+	 * @param idAppointment
+	 *            ID of the appointment
+	 * @param applicationNumberList
+	 *            the application numbers
+	 * @param statusResponseList
+	 *            the status of each application number
+	 * @return true if an appointment can be created for every number
+	 */
+	static boolean areValidForCreation( int idAppointment, List<String> applicationNumberList, List<AntsStatusResponsePOJO> statusResponseList )
+	{
 		// Check the validity of each application number's status and appointments
 		for( AntsStatusResponsePOJO statusResponse : statusResponseList )
 		{

@@ -62,4 +62,34 @@ public class TaskAntsAppointmentServiceTest extends LuteceTestCase
     {
         assertTrue( TaskAntsAppointmentService.splitAntsApplicationValues( " ", "," ).isEmpty( ) );
     }
+
+    /**
+     * Several numbers: the ANTS call of the second number fails (HTTP 500): the task fails, it does not report a success.
+     */
+    @Test
+    public void testFailedCallOfOneNumberFailsTheTask( )
+    {
+        List<String> called = new java.util.ArrayList<>( );
+        boolean bResult = TaskAntsAppointmentService.callForEachNumber( List.of( "AB12345678", "CD12345678", "EF12345678" ), strNumber -> {
+            called.add( strNumber );
+            if ( "CD12345678".equals( strNumber ) )
+            {
+                throw new java.io.IOException( "HTTP 500" );
+            }
+            return true;
+        } );
+
+        assertFalse( bResult );
+        assertEquals( List.of( "AB12345678", "CD12345678" ), called, "the calls stop at the failure" );
+    }
+
+    /**
+     * Every call accepted: the task succeeds.
+     */
+    @Test
+    public void testEveryCallAcceptedSucceeds( )
+    {
+        assertTrue( TaskAntsAppointmentService.callForEachNumber( List.of( "AB12345678", "CD12345678" ), strNumber -> true ) );
+    }
+
 }

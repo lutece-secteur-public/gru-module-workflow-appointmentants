@@ -68,6 +68,7 @@ import fr.paris.lutece.plugins.appointment.service.AppointmentUtilities;
 import fr.paris.lutece.plugins.appointment.service.LocalizationService;
 import fr.paris.lutece.plugins.appointment.web.dto.AppointmentDTO;
 import fr.paris.lutece.plugins.genericattributes.business.Response;
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfig;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.TaskAntsAppointmentConfigDAO;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.business.history.TaskAntsAppointmentHistory;
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsAddAppointmentResponsePOJO;
@@ -169,11 +170,15 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		boolean isAppointmentCreated = false;
 
+		int nIdFieldEntry = getAntsApplicationFieldId( idTask );
+		if( nIdFieldEntry < 0 )
+		{
+			AppLogService.error( "{} - Task {} has no configuration: the question holding the ANTS numbers was never saved", BEAN_SERVICE, idTask );
+			return false;
+		}
+
 		// Get the ANTS application numbers from the appointment's Responses
-		String strAntsApplicationNumbers = getAntsApplicationValuesFromResponse(
-				idAppointment,
-				getAntsApplicationFieldId( idTask )
-				);
+		String strAntsApplicationNumbers = getAntsApplicationValuesFromResponse( idAppointment, nIdFieldEntry );
 
 		// Split the potential ANTS application values retrieved from the appointment's Responses
 		List<String> applicationNumberList = splitAntsApplicationValues( strAntsApplicationNumbers, APPLICATION_NUMBERS_SEPARATOR );
@@ -240,11 +245,15 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 
 		boolean isAppointmentDeleted = false;
 
+		int nIdFieldEntry = getAntsApplicationFieldId( idTask );
+		if( nIdFieldEntry < 0 )
+		{
+			AppLogService.error( "{} - Task {} has no configuration: the question holding the ANTS numbers was never saved", BEAN_SERVICE, idTask );
+			return false;
+		}
+
 		// Get the ANTS application numbers from the appointment's Responses
-		String strAntsApplicationNumbers = getAntsApplicationValuesFromResponse(
-				idAppointment,
-				getAntsApplicationFieldId( idTask )
-				);
+		String strAntsApplicationNumbers = getAntsApplicationValuesFromResponse( idAppointment, nIdFieldEntry );
 
 		// Split the potential ANTS application values retrieved from the appointment's Responses
 		List<String> applicationNumberList = splitAntsApplicationValues( strAntsApplicationNumbers, APPLICATION_NUMBERS_SEPARATOR );
@@ -928,6 +937,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 	@Override
 	public int getAntsApplicationFieldId( int idTask )
 	{
-		return _task_ants_appointment_dao.load( idTask ).getIdFieldEntry( );
+		TaskAntsAppointmentConfig config = _task_ants_appointment_dao.load( idTask );
+
+		// a task added to an action whose configuration was never saved has no field
+		return ( config != null ) ? config.getIdFieldEntry( ) : -1;
 	}
 }

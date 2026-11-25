@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Test;
 
 import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
 import fr.paris.lutece.test.LuteceTestCase;
+import jakarta.enterprise.inject.spi.CDI;
 
 /**
  * Covers the reading of the ANTS application numbers the user typed.
@@ -105,4 +106,14 @@ public class TaskAntsAppointmentServiceTest extends LuteceTestCase
         assertFalse( TaskAntsAppointmentService.areValidForCreation( 1, List.of( "AB12345678" ), List.of( status ) ) );
     }
 
+    /**
+     * A task whose configuration was never saved has no application number field: no NullPointerException.
+     */
+    @Test
+    public void testFieldOfATaskWithoutConfiguration( )
+    {
+        ITaskAntsAppointmentService service = CDI.current( ).select( ITaskAntsAppointmentService.class ).get( );
+
+        assertEquals( -1, service.getAntsApplicationFieldId( 987654 ) );
+    }
 }

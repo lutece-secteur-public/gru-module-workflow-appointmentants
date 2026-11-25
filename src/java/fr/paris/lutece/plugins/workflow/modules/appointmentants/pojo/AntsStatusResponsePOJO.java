@@ -34,6 +34,7 @@
 package fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -55,6 +56,24 @@ public class AntsStatusResponsePOJO {
 	 */
 	@JsonProperty( "appointments" )
 	private Object[] appointments;
+
+	/**
+	 * Application number this status belongs to (the key of the status in the answer of the ANTS API)
+	 */
+	@JsonIgnore
+	private String applicationNumber;
+
+	@JsonIgnore
+	public String getApplicationNumber( )
+	{
+		return applicationNumber;
+	}
+
+	@JsonIgnore
+	public void setApplicationNumber( String applicationNumber )
+	{
+		this.applicationNumber = applicationNumber;
+	}
 
 	public String getStatus( )
 	{

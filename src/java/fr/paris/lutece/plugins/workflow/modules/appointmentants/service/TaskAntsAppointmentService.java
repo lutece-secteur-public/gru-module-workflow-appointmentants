@@ -203,7 +203,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		if( isApplicationNumberListValidForCreation( idAppointment, applicationNumberList, strMeetingPointId ) ) {
 
 			// For each application number available, create a new ANTS appointment
-			isAppointmentCreated = callForEachNumber( applicationNumberList, appplicationNumber -> {
+			isAppointmentCreated = createAll( applicationNumberList, appplicationNumber -> {
 				// Build the ANTS URL used to create a new appointment
 				String antsURL = buildAntsAddAppointmentUrl(
 						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
@@ -219,7 +219,13 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 				AppLogService.debug( "{} ANTS appointment with number '{}' was {} for appointment with ID {}", BEAN_SERVICE, appplicationNumber,
 						bCreated ? "created" : "not created", idAppointment );
 				return bCreated;
-			} );
+			}, appplicationNumber -> deleteAntsAppointmentRestCall( buildAntsDeleteAppointmentUrl(
+					AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL ),
+					AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL_DELETE_APPOINTMENT ),
+					appplicationNumber,
+					applicationContent.get( KEY_LOCATION ),
+					strMeetingPointId,
+					applicationContent.get( KEY_DATE ) ) ) );
 		}
 		return isAppointmentCreated;
 	}
@@ -274,10 +280,16 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
         // Generate the value of the "meeting_point_id" for this appointment
         String strMeetingPointId = AntsAppointmentUtils.generateAntsMeetingPointId( formId );
 
-		// Check if the application numbers used are valid and still allow the appointments to be deleted
-		if( isApplicationNumberListValidForDeletion( idAppointment, applicationNumberList, strMeetingPointId ) ) {
-			// For each application number available, delete any existing ANTS appointment
-			isAppointmentDeleted = callForEachNumber( applicationNumberList, appplicationNumber -> {
+		// The numbers whose appointment is still registered at ANTS: the others are already deleted
+		List<String> numbersToDelete = getNumbersToDelete( idAppointment, applicationNumberList, strMeetingPointId );
+		if( numbersToDelete != null && numbersToDelete.isEmpty( ) )
+		{
+			// every number is already deleted at ANTS (retry after a partial deletion)
+			return true;
+		}
+		if( numbersToDelete != null ) {
+			// For each application number still registered, delete its ANTS appointment
+			isAppointmentDeleted = callForEachNumber( numbersToDelete, appplicationNumber -> {
 				// Build the ANTS URL used to delete an appointment
 				String antsURL = buildAntsDeleteAppointmentUrl(
 						AppPropertiesService.getProperty( TaskAntsAppointmentRestConstants.ANTS_URL),
@@ -345,6 +357,115 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			}
 		}
 		return bResult;
+	}
+
+	/**
+	 * Creates the ANTS appointment of each application number, in order. When the ANTS API refuses or fails on a number,
+	 * the numbers this run already registered are deleted again (best effort: a failed undo is logged), and the creation
+	 * fails.
+	 *
+	 * @param applicationNumberList
+	 *            the application numbers
+	 * @param addCall
+	 *            the creation call for one number
+	 * @param undoCall
+	 *            the deletion call for one number
+	 * @return true if every number was registered
+	 */
+	static boolean createAll( List<String> applicationNumberList, AntsNumberCall addCall, AntsNumberCall undoCall )
+	{
+		List<String> registered = new ArrayList<>( );
+		boolean bCreated = callForEachNumber( applicationNumberList, strApplicationNumber -> {
+			boolean bAdded = addCall.call( strApplicationNumber );
+			if ( bAdded )
+			{
+				registered.add( strApplicationNumber );
+			}
+			return bAdded;
+		} );
+		if ( !bCreated )
+		{
+			// undo, best effort, what this run registered: a retry can then register every number again
+			for ( String strApplicationNumber : registered )
+			{
+				try
+				{
+					if ( !undoCall.call( strApplicationNumber ) )
+					{
+						AppLogService.getLogger( ).warn( "{} - ANTS number {} registered by a failed creation could not be deleted again", BEAN_SERVICE, strApplicationNumber );
+					}
+				}
+				catch( Exception e )
+				{
+					AppLogService.getLogger( ).warn( "{} - ANTS number {} registered by a failed creation could not be deleted again: {}", BEAN_SERVICE, strApplicationNumber,
+							e.getMessage( ) );
+				}
+			}
+		}
+		return bCreated;
+	}
+
+	/**
+	 * Gives the application numbers whose appointment must be deleted at ANTS: those that still have an appointment. A
+	 * number without appointment is already deleted (a retry after a partial deletion completes the job).
+	 *
+	 * @param applicationNumberList
+	 *            the application numbers of the appointment
+	 * @param statusResponseList
+	 *            the status of the numbers answered by the ANTS API
+	 * @return the numbers to delete, or null when the deletion is refused (a number with an appointment is not validated)
+	 */
+	static List<String> numbersToDelete( List<String> applicationNumberList, List<AntsStatusResponsePOJO> statusResponseList )
+	{
+		if ( statusResponseList.isEmpty( ) )
+		{
+			return null;
+		}
+		List<String> numbers = new ArrayList<>( );
+		for ( AntsStatusResponsePOJO status : statusResponseList )
+		{
+			if ( ArrayUtils.isEmpty( status.getAppointments( ) ) )
+			{
+				// already deleted at ANTS: nothing left to do for this number
+				continue;
+			}
+			if ( !Strings.CS.equals( status.getStatus( ), STATUS_VALIDATED ) || !applicationNumberList.contains( status.getApplicationNumber( ) ) )
+			{
+				return null;
+			}
+			numbers.add( status.getApplicationNumber( ) );
+		}
+		return numbers;
+	}
+
+	/**
+	 * Gets the status of the application numbers from the ANTS API and gives the numbers whose appointment must be deleted.
+	 *
+	 * @param idAppointment
+	 *            ID of the appointment
+	 * @param applicationNumberList
+	 *            the application numbers
+	 * @param strMeetingPointId
+	 *            The value of the "meeting_point_id" parameter
+	 * @return the numbers to delete, or null when the status cannot be read or the deletion is refused
+	 */
+	private static List<String> getNumbersToDelete( int idAppointment, List<String> applicationNumberList, String strMeetingPointId )
+	{
+		try
+		{
+			List<String> numbers = numbersToDelete( applicationNumberList, getAntsStatusResponseAsObjects( applicationNumberList, strMeetingPointId ) );
+			if ( numbers == null )
+			{
+				AppLogService.info( "{} - ANTS appointment not valid for deletion: Appointment {} with ANTS numbers {}", BEAN_SERVICE, idAppointment,
+						applicationNumberList );
+			}
+			return numbers;
+		}
+		catch( Exception e )
+		{
+			AppLogService.error( BEAN_SERVICE, e );
+			return null;
+		}
 	}
 
 	/**
@@ -782,10 +903,9 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 		{
 			String fieldName = fieldNames.next( );
 			JsonNode field = jsonNode.get( fieldName );
-			statusList.add(
-					mapper.readerFor( AntsStatusResponsePOJO.class )
-					.readValue( field.toString() )
-					);
+			AntsStatusResponsePOJO status = mapper.readerFor( AntsStatusResponsePOJO.class ).readValue( field.toString( ) );
+			status.setApplicationNumber( fieldName );
+			statusList.add( status );
 		}
 		return statusList;
 	}

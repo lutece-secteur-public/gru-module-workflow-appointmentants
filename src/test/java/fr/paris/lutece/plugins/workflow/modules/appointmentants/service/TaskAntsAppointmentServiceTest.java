@@ -37,6 +37,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import fr.paris.lutece.plugins.workflow.modules.appointmentants.pojo.AntsStatusResponsePOJO;
 import fr.paris.lutece.test.LuteceTestCase;
 
 /**
@@ -90,6 +91,18 @@ public class TaskAntsAppointmentServiceTest extends LuteceTestCase
     public void testEveryCallAcceptedSucceeds( )
     {
         assertTrue( TaskAntsAppointmentService.callForEachNumber( List.of( "AB12345678", "CD12345678" ), strNumber -> true ) );
+    }
+
+    /**
+     * A status answer without appointments for a number that is not validated: refused, without NullPointerException.
+     */
+    @Test
+    public void testStatusWithoutAppointmentsNotValidatedIsRefused( )
+    {
+        AntsStatusResponsePOJO status = new AntsStatusResponsePOJO( );
+        status.setStatus( "unknown" );
+
+        assertFalse( TaskAntsAppointmentService.areValidForCreation( 1, List.of( "AB12345678" ), List.of( status ) ) );
     }
 
 }

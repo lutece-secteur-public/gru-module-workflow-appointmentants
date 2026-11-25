@@ -686,7 +686,7 @@ public class TaskAntsAppointmentService implements ITaskAntsAppointmentService {
 			{
 				AppLogService.info(
 						"{} - ANTS appointment not valid for creation: Appointment {} with ANTS number '{}' has a status '{}' and {} appointment(s)",
-						BEAN_SERVICE, idAppointment, Arrays.toString( applicationNumberList.toArray( ) ), statusAntsNumber, listAntsNumberAppointments.length );
+						BEAN_SERVICE, idAppointment, Arrays.toString( applicationNumberList.toArray( ) ), statusAntsNumber, ArrayUtils.getLength( listAntsNumberAppointments ) );
 				return false;
 			}
 		}
